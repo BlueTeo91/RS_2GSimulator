@@ -2,7 +2,19 @@
 
 Hi everybody! Remember a few simple rules for using the repository:
 
-1 ) COMMIT when you make changes to the code
+1) MINIGUIDE TO GITHUB (http://rogerdudler.github.io/git-guide/):
+
+- Avery time you open repository in local: 
+
+git pull
+
+- If you want to upload some modify:
+
+git add "file name"
+
+git commit -m "message for commit"
+
+git push origin master
 
 2 ) comments on in any case the code
 
