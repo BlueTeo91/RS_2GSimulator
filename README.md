@@ -4,17 +4,17 @@ Hi everybody! Remember a few simple rules for using the repository:
 
 1) MINIGUIDE TO GITHUB (http://rogerdudler.github.io/git-guide/):
 
-- Avery time you open repository in local: 
+- Every time you open repository in local: 
 
-git pull
+  git pull
 
 - If you want to upload some modify:
 
-git add "file name"
+  git add "file name"
 
-git commit -m "message for commit"
+  git commit -m "message for commit"
 
-git push origin master
+  git push origin master
 
 2 ) comments on in any case the code
 
