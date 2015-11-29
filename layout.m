@@ -15,13 +15,9 @@ axis equal, axis([10 50 10 50]), zoom on
 radius = 1/sqrt(3);
 
 %Plot N*N circles centered in X,Y coordinates
-for i=0:N
-    for j=0:N
-        if (mod(i,2)==0) 
-            circle(X(1)+((3/2)*i*radius),Y(1)+j,radius)
-        else
-            circle(X(1)+((3/2)*i*radius),Y(1)+j+1/2,radius)
-        end
+for i=1:N
+    for j=1:N
+        circle(X(i,j),Y(i,j),radius)
     end
 end
 
