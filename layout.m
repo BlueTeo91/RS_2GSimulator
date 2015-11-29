@@ -1,18 +1,27 @@
 % Generate hexagonal grid
+N = 21;
 Rad3Over2 = sqrt(3) / 2;
-[X Y] = meshgrid(0:1:41);
+[X, Y] = meshgrid(0:1:N);
 n = size(X,1);
 X = Rad3Over2 * X;
 Y = Y + repmat([0 0.5],[n,n/2]);
 
-for i=1:42
-    for j=1:42
-       
-        hold on
+% Plot the hexagonal mesh, including cell borders
+[XV, YV] = voronoi(X(:),Y(:)); 
+hold on
+plot(X,Y,'.',XV,YV,'b-')
+axis equal, axis([10 50 10 50]), zoom on
+
+radius = 1/sqrt(3);
+
+%Plot N*N circles centered in X,Y coordinates
+for i=0:N
+    for j=0:N
+        if (mod(i,2)==0) 
+            circle(X(1)+((3/2)*i*radius),Y(1)+j,radius)
+        else
+            circle(X(1)+((3/2)*i*radius),Y(1)+j+1/2,radius)
+        end
     end
 end
 
-% Plot the hexagonal mesh, including cell borders
-[XV YV] = voronoi(X(:),Y(:)); 
-plot(X,Y,'.',XV,YV,'b-')
-axis equal, axis([10 100 10 100]), zoom on
