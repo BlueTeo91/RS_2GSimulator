@@ -1,0 +1,48 @@
+BS TRANSMITTED POWER = from 5W to 40W (MACRO CELLS) - from 25mW to 1,58W (MICRO CELLS)
+ 
+10W
+-30dBm
+
+70 dB PC
+
+
+MS TRANSMITTED POWER = 1W (1800 MHz) - 2W (900 MHz) - POWER CONTROL: down to 1mW
+
+MAXIMUM CELL SIZE = 35Km
+
+MODULATION: FTDMA
+
+BANDS:
+
+1) 900 MHz  (UPLINK: 890-915  -  DOWNLINK: 935-960)
+
+- Total Bandwidth: 25 MHz  
+- Bandwidth available for the operator: 5 MHz
+- Number of frequency channels: 124 (200KHz each)
+- 30 subcarriers per operator
+- 8 full-rate or 16 half-rate time slots per channel
+- Frame duration: 4,615ms
+- Channel data rate: 270,833 kbit/s
+- Total number of time slots: 200
+
+2) 1800 MHz  (UPLINK: 1710,2-1784,8  -  DOWNLINK: 1805,2 - 1879,8)
+Channel Number: 512-885
+15-20 subcarriers
+K=3/4 (tri-sect)
+K=4/7 (omni-directional)
+
+MINIMUM REQUIRED C/I: > 9dB
+
+RX SENSIVITY:
+MIN RX-LEVEL(MS) = -102dBm
+MIN RX-LEVEL(BS) = -104dBm
+
+PATH LOSS EXPONENT: urban environment: 3,6
+
+CELL RADIUS: ?
+CLUSTER SIZE:  ?
+
+Antenna gain= 15dBi
+147dB Maximum Path Loss
+
+try PC few dB higher than Prmin (try to change the margin), take into account fading margin
