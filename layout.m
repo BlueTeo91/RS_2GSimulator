@@ -12,10 +12,10 @@ hold on
 plot(X,Y,'.',XV,YV,'b-')
 axis equal, axis([0.1 1 0.1 1]), zoom on
 
-radius = (1/sqrt(3))/N; 
+radius = (1/sqrt(3))/N; %Cell radius in the plot
 
-R = 10 %Real radius in kilometers
-Scale = R/radius %Ratio between Real Radius (computed with propagation formula) and radius (figure) gives the scaling factor
+R = 10; %Real radius in kilometers (computed with propagation formula)
+Scale = R/radius; %Ratio between Real Radius and radius (figure) gives the scaling factor
 
 % Plot N*N circles centered in X,Y coordinates
 for i=1:N
