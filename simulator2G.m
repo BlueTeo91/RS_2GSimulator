@@ -64,13 +64,14 @@ Scale = R/r;                                       % Scaling Factor
 %% Mobile Station Deployment
 
 N_MSe = 10000;                                     % Estimated Number of MS in the service area
-Asquare = (((0.85-0.15)^2)*(Scale^2))/(1e6);       % Area of the square (square km)
+% Area of the rectangle (square km)
+Arect = (((0.8508-0.1519)*(0.8421-0.1579))*(Scale^2))/(1e6);      
 a = r*sqrt(3)/2;                                   % Apothem of the hexagon (plot)
 Aservice = (((((6*r)*a)/2)*N_BS)*(Scale^2))/(1e6); % Area of the service area (square km)
-N_MStot = round(N_MSe*(Asquare/Aservice));         % Estimated Number of MS in the square area
+N_MStot = round(N_MSe*(Arect/Aservice));           % Number of MS in the rectangular area
 
 % MS coordinates generation
-[X_MS,Y_MS] = uniformMS(0.15,0.85,0.15,0.85,N_MStot);
+[X_MS,Y_MS] = uniformMS(0.1519,0.8508,0.1579,0.8421,N_MStot);
 
 % Assign nearest BS to each MS
 cellID = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
