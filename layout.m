@@ -8,7 +8,7 @@ clc          % Clear the command window
 
 
 % Generate hexagonal grid
-N = 13;                             % NxN grid
+N = 19;                             % NxN grid
 Rad3Over2 = sqrt(3)/2;
 [X, Y] = meshgrid(0:1:N);
 n = size(X,1);
