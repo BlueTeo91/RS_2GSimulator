@@ -8,7 +8,7 @@ clc          % Clear the command window
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Simulator Parameters
-tic
+
 
 % Antennas Parameters
 Ptmax_BS = 10;                                     % BS Max TX Power (Watts)
@@ -37,10 +37,10 @@ Lmax = Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB);      % Maximum Path Loss (dB)
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
+Pcall = 0.3;                                       % Probability of being in a call
 p_DL = 0.45;                                       % Probability of Downlink State
 p_UL = 0.45;                                       % Probability of Uplink State
 p_IN = 0.1;                                        % Probability of Inactive State
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% BS Deployment
@@ -65,7 +65,7 @@ Scale = R/r;                                       % Scaling Factor
 
 N_MSe = 10000;                                     % Estimated Number of MS in the service area
 % Area of the rectangle (square km)
-Arect = (((0.8508-0.1519)*(0.8421-0.1579))*(Scale^2))/(1e6);      
+Arect = (((0.8508-0.1519)*(0.8421-0.1579))*(Scale^2))/(1e6);
 a = r*sqrt(3)/2;                                   % Apothem of the hexagon (plot)
 Aservice = (((((6*r)*a)/2)*N_BS)*(Scale^2))/(1e6); % Area of the service area (square km)
 N_MStot = round(N_MSe*(Arect/Aservice));           % Number of MS in the rectangular area
@@ -79,8 +79,8 @@ cellID = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
 % Compute distance between MS and nearest BS
 distance = computeDistance(BSC(cellID,:),[X_MS, Y_MS]);
 
-MSCtemp = [X_MS, Y_MS, distance*Scale];            % MS temporary coordinates and distance (m)
-index = find(MSCtemp(:,3) < R);                    % Index of MSCtemp with distance less than the cell radius
+MSCtemp = [X_MS, Y_MS, distance*Scale];            % MS temporary coordinates and distance (meters)
+index = find(MSCtemp(:,3) < R);                    % Index of MSCtemp with distance less than cell radius
 MSC = MSCtemp(index,:);                            % Save in MSC only the MS inside the service area
 N_MS = length(MSC);                                % Real Number of MS in the service area
 
@@ -92,11 +92,10 @@ N_MS = length(MSC);                                % Real Number of MS in the se
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Traffic Generation
 
-
-
-
+% Generate random vector of 0s and 1s -> 1 = calling, 0 = not calling
+calling = (rand(N_MS,1)>(1-Pcall));
+N_MScalling = sum(calling);                         % Number of MS in a call
+MSC = [MSC, calling];                               % Add call state column to MS matrix
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-toc
 
