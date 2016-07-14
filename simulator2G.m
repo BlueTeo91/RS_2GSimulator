@@ -58,7 +58,7 @@ end
 r = (1/sqrt(3))/N;                                 % Cell radius in the plot
 Scale = R/r;                                       % Scaling Factor
 
-%plotBS(BSC(:,1),BSC(:,2),r,K);                     % Plot BS Deployment
+plotBS(BSC(:,1),BSC(:,2),r,K);                     % Plot BS Deployment
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Mobile Station Deployment
@@ -83,7 +83,7 @@ index = find(MSCtemp(:,3) < R);                    % Index of MSCtemp with dista
 MSC = MSCtemp(index,:);                            % Save in MSC only the MS inside the service area
 N_MS = length(MSC);                                % Real Number of MS in the service area
 
-%plotMS(MSC(:,1),MSC(:,2));                         % Plot MS Deployment
+plotMS(MSC(:,1),MSC(:,2));                         % Plot MS Deployment
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Mobile Station Deployment
