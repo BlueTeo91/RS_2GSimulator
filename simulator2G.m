@@ -36,7 +36,9 @@ Lmax = Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB);      % Maximum Path Loss (dB)
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
-Pcall = 0.3;                                       % Probability of being in a call
+
+Pcall_average = 0.5;                               % Average call probability
+Pcall_StDev = 0.05;                                % Call probability standard deviation
 p_DL = 0.45;                                       % Probability of Downlink State
 p_UL = 0.45;                                       % Probability of Uplink State
 p_IN = 0.1;                                        % Probability of Inactive State
@@ -95,22 +97,20 @@ N_MS = length(MSC);                                % Real Number of MS in the se
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Traffic Generation
 
+% Probability of being in a call between [PcallMin, PcallMax]
+Pcall = abs(Pcall_average+Pcall_StDev*randn(1,1));
+
 % Generate random vector of 0s and 1s -> 1 = calling, 0 = not calling (with
 % a percentage of Pcall users calling)
 calling = (rand(N_MS,1) <= Pcall);
 N_MScalling = sum(calling);                         % Number of MS in a call
-MSC = [MSC, calling, zeros(length(MSC))];           % Add call state column to MS matrix
+MSC = [MSC, calling, zeros(N_MS,1)];         % Add call state column to MS matrix
+
 % Assign traffic type based on probabilities defined above
-traffic_kind = randsample([1 2 3],N_MScalling,true,[p_DL p_UL p_IN]);
-
-j=1;
-for i = find(calling)
-    MSC(i,5) = traffic_kind(j);
-    j=j+1;
-end
-
-% length(find(calling == 1))
-% length(MSC)
+traffic_kind = randsample(3,N_MScalling,true,[p_DL p_UL p_IN]);
+j=1:N_MScalling;
+i=find(calling);
+MSC(i,5)=traffic_kind(j);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

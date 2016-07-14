@@ -3,7 +3,7 @@ function [x,y] = uniformMS(xa,xb,ya,yb,n)
 % with coordinate x ranging from xa to xb
 % and coordinate y ranging from ya to yb
 
-x = xa + (xb - xa) * rand(n, 1);
-y = ya + (yb - ya) * rand(n, 1);
+x = xa + (xb - xa) .* rand(n, 1);
+y = ya + (yb - ya) .* rand(n, 1);
 
 end
