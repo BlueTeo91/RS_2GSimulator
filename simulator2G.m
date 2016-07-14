@@ -91,7 +91,6 @@ N_MS_eachcell = zeros(N_BS,1);
 for i = 1:N_BS
     N_MS_eachcell(i,1) = sum(MSC(:,3) == i);
 end
-BSC = [BSC, N_MS_eachcell];                        % Add number of MS in each cell to BS matrix
 
 %plotMS(MSC(:,1),MSC(:,2));                         % Plot MS Deployment
 
@@ -157,7 +156,7 @@ for i = 1:N_BS
 end
 
 % Add columns with number of MS in different states in each cell to BS matrix
-BSC = [BSC, N_MS_calling_eachcell, N_MS_downlink_eachcell, N_MS_uplink_eachcell, N_MS_inactive_eachcell];
+BSC = [BSC, N_MS_eachcell, N_MS_calling_eachcell, N_MS_downlink_eachcell, N_MS_uplink_eachcell, N_MS_inactive_eachcell];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Propagation
