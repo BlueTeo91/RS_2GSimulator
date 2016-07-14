@@ -96,7 +96,7 @@ N_MS = length(MSC);                                % Real Number of MS in the se
 %% Traffic Generation
 
 % Generate random vector of 0s and 1s -> 1 = calling, 0 = not calling (with
-% a percentage of Pcall users calling)
+% a percentage of Pcall users calling
 calling = (rand(N_MS,1) <= Pcall);
 N_MScalling = sum(calling);                         % Number of MS in a call
 MSC = [MSC, calling, zeros(length(MSC))];           % Add call state column to MS matrix
@@ -106,9 +106,9 @@ traffic_kind = randsample([1 2 3],N_MScalling,true,[p_DL p_UL p_IN]);
 j=1;
 for i = find(calling)
     MSC(i,5) = traffic_kind(j);
-    j=j+1;
+    j=j+1;    
 end
-
+                               
 % length(find(calling == 1))
 % length(MSC)
 
