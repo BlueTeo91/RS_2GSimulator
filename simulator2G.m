@@ -44,7 +44,7 @@ p_UL = 0.45;                                       % Probability of Uplink State
 p_IN = 0.1;                                        % Probability of Inactive State
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% BS Deployment
+%% Base Stations Deployment
 
 filenameBS = 'BS_K=7.txt';                         % File with BS coordinates
 [X_BS,Y_BS] = BSread(filenameBS);                  % Read from file
@@ -59,12 +59,13 @@ end
 r = (1/sqrt(3))/N;                                 % Cell radius in the plot
 Scale = R/r;                                       % Scaling Factor
 
-% plotBS(BSC(:,1),BSC(:,2),r,K);                     % Plot BS Deployment
+%plotBS(BSC(:,1),BSC(:,2),r,K);                     % Plot BS Deployment
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Mobile Station Deployment
+%% Mobile Stations Deployment
 
 N_MSe = 10000;                                     % Estimated Number of MS in the service area
+
 % Area of the rectangle (square km)
 Arect = (((0.8508-0.1519)*(0.8421-0.1579))*(Scale^2))/(1e6);
 a = r*sqrt(3)/2;                                   % Apothem of the hexagon (plot)
@@ -80,17 +81,17 @@ cellID = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
 % Compute distance between MS and nearest BS
 distance = computeDistance(BSC(cellID,:),[X_MS, Y_MS]);
 
-MSCtemp = [X_MS, Y_MS, distance*Scale];            % MS temporary coordinates and distance (meters)
-index = find(MSCtemp(:,3) < R);                    % Index of MSCtemp with distance less than cell radius
-MSC = MSCtemp(index,:);                            % Save in MSC only the MS inside the service area
+MSCtemp = [X_MS, Y_MS, cellID, distance*Scale];    % MS temporary matrix
+MSindex = find(MSCtemp(:,4) < R);                  % Index of MSCtemp with distance less than cell radius
+MSC = MSCtemp(MSindex,:);                          % Save in MSC only the MS inside the service area
 N_MS = length(MSC);                                % Real Number of MS in the service area
 
-% plotMS(MSC(:,1),MSC(:,2));                         % Plot MS Deployment
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Mobile Station Deployment
-
-% Neighbouring list (TO BE DEVELOPED)
+% Count the number of MS in each cell
+N_MS_eachcell = zeros(N_BS,1);
+for i = 1:N_BS
+    N_MS_eachcell(i,1) = sum(MSC(:,3) == i);
+end
+BSC = [BSC, N_MS_eachcell];                        % Add number of MS in each cell to BS matrix
 
 %plotMS(MSC(:,1),MSC(:,2));                         % Plot MS Deployment
 
@@ -100,17 +101,90 @@ N_MS = length(MSC);                                % Real Number of MS in the se
 % Probability of being in a call between [PcallMin, PcallMax]
 Pcall = abs(Pcall_average+Pcall_StDev*randn(1,1));
 
-% Generate random vector of 0s and 1s -> 1 = calling, 0 = not calling (with
-% a percentage of Pcall users calling)
+% Generate random vector of 0s and 1s -> 1 = calling, 0 = not calling
+% (with a percentage of Pcall users calling)
 calling = (rand(N_MS,1) <= Pcall);
-N_MScalling = sum(calling);                         % Number of MS in a call
-MSC = [MSC, calling, zeros(N_MS,1)];         % Add call state column to MS matrix
+N_MScalling = sum(calling);                        % Number of calling MS
+MSC = [MSC, calling, zeros(N_MS,1)];               % Add call state column to MS matrix
+
+% Count the number of calling MS in each cell
+N_MS_calling_eachcell = zeros(N_BS,1);
+for i = 1:N_BS
+    for k = 1:N_MS
+        if(MSC(k,3) == i && MSC(k,5) == 1)
+            N_MS_calling_eachcell(i,1) = N_MS_calling_eachcell(i,1) + 1;
+        end
+    end
+end
 
 % Assign traffic type based on probabilities defined above
+% 1 = DOWNLINK
+% 2 = UPLINK
+% 3 = INACTIVE
 traffic_kind = randsample(3,N_MScalling,true,[p_DL p_UL p_IN]);
-j=1:N_MScalling;
-i=find(calling);
-MSC(i,5)=traffic_kind(j);
+j = 1:N_MScalling;
+i = find(calling);
+MSC(i,6) = traffic_kind(j);                        % Add traffic type column to MS matrix
+
+% Count the number of MS in DOWNLINK state in each cell
+N_MS_downlink_eachcell = zeros(N_BS,1);
+for i = 1:N_BS
+    for k = 1:N_MS
+        if(MSC(k,3) == i && MSC(k,6) == 1)
+            N_MS_downlink_eachcell(i,1) = N_MS_downlink_eachcell(i,1) + 1;
+        end
+    end
+end
+
+% Count the number of MS in UPLINK state in each cell
+N_MS_uplink_eachcell = zeros(N_BS,1);
+for i = 1:N_BS
+    for k = 1:N_MS
+        if(MSC(k,3) == i && MSC(k,6) == 2)
+            N_MS_uplink_eachcell(i,1) = N_MS_uplink_eachcell(i,1) + 1;
+        end
+    end
+end
+
+% Count the number of MS in INACTIVE state in each cell
+N_MS_inactive_eachcell = zeros(N_BS,1);
+for i = 1:N_BS
+    for k = 1:N_MS
+        if(MSC(k,3) == i && MSC(k,6) == 3)
+            N_MS_inactive_eachcell(i,1) = N_MS_inactive_eachcell(i,1) + 1;
+        end
+    end
+end
+
+% Add columns with number of MS in different states in each cell to BS matrix
+BSC = [BSC, N_MS_calling_eachcell, N_MS_downlink_eachcell, N_MS_uplink_eachcell, N_MS_inactive_eachcell];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Propagation
 
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SNR Computation
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% RUs Assignment
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SIR Assignment
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
