@@ -36,12 +36,15 @@ Lmax = Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB);      % Maximum Path Loss (dB)
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
-
+N_MSe = 10000;                                     % Estimated Number of MS in the service area
 Pcall_average = 0.5;                               % Average call probability
 Pcall_StDev = 0.05;                                % Call probability standard deviation
 p_DL = 0.45;                                       % Probability of Downlink State
 p_UL = 0.45;                                       % Probability of Uplink State
 p_IN = 0.1;                                        % Probability of Inactive State
+
+% Total number of Radio Resource Units available to the operator
+N_RU = 700;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Base Stations Deployment
@@ -63,8 +66,6 @@ Scale = R/r;                                       % Scaling Factor
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Mobile Stations Deployment
-
-N_MSe = 10000;                                     % Estimated Number of MS in the service area
 
 % Area of the rectangle (square km)
 Arect = (((0.8508-0.1519)*(0.8421-0.1579))*(Scale^2))/(1e6);
@@ -175,7 +176,7 @@ BSC = [BSC, N_MS_eachcell, N_MS_calling_eachcell, N_MS_downlink_eachcell, N_MS_u
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% RUs Assignment
 
-
+N_RU_cell = 700/K;                                 % Number of RRUs per cell
 
 
 
