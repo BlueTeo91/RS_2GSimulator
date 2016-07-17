@@ -80,12 +80,23 @@ N_MStot = round(N_MSe*(Arect/Aservice));           % Number of MS in the rectang
 cellID = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
 
 % Compute distance between MS and nearest BS
-distance = computeDistance(BSC(cellID,:),[X_MS, Y_MS]);
+shortest_distance = computeDistance(BSC(cellID,:),[X_MS, Y_MS]);
 
-MSCtemp = [X_MS, Y_MS, cellID, distance*Scale];    % MS temporary matrix
+% MS temporary matrix
+MSCtemp = [X_MS, Y_MS, cellID, shortest_distance*Scale];
 MSindex = find(MSCtemp(:,4) < R);                  % Index of MSCtemp with distance less than cell radius
 MSC = MSCtemp(MSindex,:);                          % Save in MSC only the MS inside the service area
 N_MS = length(MSC);                                % Real Number of MS in the service area
+
+% Compute distance between each MS and each BS
+distance = zeros(N_MS,N_BS);
+for i = 1:N_MS
+    for j = 1:N_BS
+        distance(i,j) = (computeDistance(MSC(i,:),BSC(j,:)).*Scale);
+    end
+end
+
+% [ADD HERE NEW CODE TO SORT THE MATRIX AND INDICES]
 
 % Count the number of MS in each cell
 N_MS_eachcell = zeros(N_BS,1);
