@@ -5,6 +5,7 @@
 close all    % Close all open figures
 clear        % Reset variables
 clc          % Clear the command window
+tic          % Start stopwatch
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Simulator Parameters
@@ -26,6 +27,13 @@ Prmin_MS_dBm = -102;                               % MS Sensitivity (dBm)
 hBS = 30;                                          % BS height (meters)
 fc = 900;                                          % Carrier Frequency (MHz)
 
+% Noise Figures
+F_BS_dB = 5;                                       % BS noise figure (dB)
+F_MS_dB = 10;                                      % MS noise figure (dB)
+
+F_BS = 10^(F_BS_dB/10);                            % BS noise figure
+F_MS = 10^(F_MS_dB/10);                            % MS noise figure
+
 % Propagation Parameters
 sigmadB = 8;                                       % Shadowing St. Dev
 LP0 = 0.99;                                        % Location Probability
@@ -36,6 +44,7 @@ Lmax = Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB);      % Maximum Path Loss (dB)
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
+Rb = 271e3;                                        % Bitrate (bit/s)
 N_MSe = 10000;                                     % Estimated Number of MS in the service area
 Pcall_average = 0.5;                               % Average call probability
 Pcall_StDev = 0.05;                                % Call probability standard deviation
@@ -179,31 +188,50 @@ Pt_BS = Ptmax_BS_dBm;
 Pt_MS = Ptmax_MS_dBm;
 
 % Inizialize first column with traffic type
-Links(:,1) = MSC(:,12);
+links(:,1) = MSC(:,12);
 temp_power = zeros(N_MS,4);
+
+% Compute received power for each link
 for i=1:N_MS
-    switch Links(i,1)
+    switch links(i,1)
         case 1      % Downlink
             temp_power(i,:) = propagation(Pt_BS,fc,hBS,sigmadB,MSC(i,7:10));
         case 2      % Uplink
             temp_power(i,:) = propagation(Pt_MS,fc,hBS,sigmadB,MSC(i,7:10));
         case 3      % Silent
-            temp_power(i,:) = propagation(Pt_BS,fc,hBS,sigmadB,MSC(i,7:10));            
+            temp_power(i,:) = propagation(Pt_BS,fc,hBS,sigmadB,MSC(i,7:10));
         otherwise   % Inactive (Not Calling)
             temp_power(i,:) = propagation(Ptmax_BS_dBm,fc,hBS,sigmadB,MSC(i,7:10));
     end
 end
 
+% Sort power in descending order and correspondent BSid
 temp_BSid = MSC(:,3:6);
-[temp_power,power_index] = sort(temp_power,2);
-temp_BSid = temp_BSid(power_index);
+[temp_power,power_index] = sort(temp_power,2,'descend');
+for i = 1:N_MS
+    temp_BSid(i,:) = temp_BSid(i,power_index(i,:));
+end
+
+% Add BSid and power ordered by received power
+links = [links, temp_BSid, temp_power];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SNR Computation
 
-
-
-
+% Compute SNR for each link
+SNR_dB = zeros(N_MS,4);
+for i=1:N_MS
+    switch links(i,1)
+        case 1      % Downlink
+            SNR_dB(i,:) = computeSNR(links(i,6:9),F_MS,Rb);
+        case 2      % Uplink
+            SNR_dB(i,:) = computeSNR(links(i,6:9),F_BS,Rb);
+        case 3      % Silent
+            SNR_dB(i,:) = computeSNR(links(i,6:9),F_MS,Rb);
+        otherwise   % Inactive (Not Calling)
+            SNR_dB(i,:) = computeSNR(links(i,6:9),F_MS,Rb);
+    end
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% RUs Assignment
@@ -220,3 +248,5 @@ N_RU_cell = 700/K;                                 % Number of RRUs per cell
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+toc          % Stop stopwatch
