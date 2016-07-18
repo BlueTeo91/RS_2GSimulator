@@ -77,7 +77,11 @@ N_MStot = round(N_MSe*(Arect/Aservice));           % Number of MS in the rectang
 [X_MS,Y_MS] = uniformMS(0.1519,0.8508,0.1579,0.8421,N_MStot);
 
 % Assign nearest BS to each MS
+<<<<<<< Updated upstream
 [cellID,shortest_distance] = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
+=======
+cellID,  = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
+>>>>>>> Stashed changes
 
 % Compute distance between MS and nearest BS
 % shortest_distance = computeDistance(BSC(cellID,:),[X_MS, Y_MS]);
