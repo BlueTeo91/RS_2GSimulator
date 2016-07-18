@@ -77,25 +77,25 @@ N_MStot = round(N_MSe*(Arect/Aservice));           % Number of MS in the rectang
 [X_MS,Y_MS] = uniformMS(0.1519,0.8508,0.1579,0.8421,N_MStot);
 
 % Assign nearest BS to each MS
-cellID = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
+[cellID,shortest_distance] = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
 
 % Compute distance between MS and nearest BS
-shortest_distance = computeDistance(BSC(cellID,:),[X_MS, Y_MS]);
+% shortest_distance = computeDistance(BSC(cellID,:),[X_MS, Y_MS]);
 
 % MS temporary matrix
 MSCtemp = [X_MS, Y_MS, cellID, shortest_distance*Scale];
 MSindex = find(MSCtemp(:,4) < R);                  % Index of MSCtemp with distance less than cell radius
-MSC = MSCtemp(MSindex,:);                          % Save in MSC only the MS inside the service area
+MSC = MSCtemp(MSindex,1:2);                          % Save in MSC only the MS inside the service area
 N_MS = length(MSC);                                % Real Number of MS in the service area
 
 % Compute distance between each MS and each BS
 distance = zeros(N_MS,N_BS);
-% for i = 1:N_MS
-%     for j = 1:N_BS
-%         distance(i,j) = (computeDistance(MSC(i,:),BSC(j,:)).*Scale);
-%     end
-% end
-distance(i,j) = (computeDistance(MSC(i,:),BSC(j,:)).*Scale);
+for i = 1:N_MS
+    for j = 1:N_BS
+        distance(i,j) = (computeDistance(MSC(i,:),BSC(j,:)).*Scale);
+    end
+end
+% distance(MSC,find(BSC)) = (computeDistance(MSC(find(MSC),:),BSC(find(BSC),:)).*Scale);
 
 % [ADD HERE NEW CODE TO SORT THE MATRIX AND INDICES]
 
