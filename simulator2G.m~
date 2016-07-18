@@ -142,7 +142,7 @@ MSC(i,12) = traffic_kind(j);                       % Add traffic type column to 
 N_MS_downlink_eachcell = zeros(N_BS,1);
 for i = 1:N_BS
     for k = 1:N_MS
-        if(MSC(k,3) == i && MSC(k,12) == 1)
+        if(MSC(k,3) == i && MSC(k,6) == 1)
             N_MS_downlink_eachcell(i,1) = N_MS_downlink_eachcell(i,1) + 1;
         end
     end
@@ -152,7 +152,7 @@ end
 N_MS_uplink_eachcell = zeros(N_BS,1);
 for i = 1:N_BS
     for k = 1:N_MS
-        if(MSC(k,3) == i && MSC(k,12) == 2)
+        if(MSC(k,3) == i && MSC(k,6) == 2)
             N_MS_uplink_eachcell(i,1) = N_MS_uplink_eachcell(i,1) + 1;
         end
     end
@@ -162,14 +162,14 @@ end
 N_MS_inactive_eachcell = zeros(N_BS,1);
 for i = 1:N_BS
     for k = 1:N_MS
-        if(MSC(k,3) == i && MSC(k,12) == 3)
+        if(MSC(k,3) == i && MSC(k,6) == 3)
             N_MS_inactive_eachcell(i,1) = N_MS_inactive_eachcell(i,1) + 1;
         end
     end
 end
 
-% Add columns with number of MS in active state (DOWNLINK + UPLINK)
-BSC = [BSC, N_MS_downlink_eachcell + N_MS_uplink_eachcell];
+% Add columns with number of MS in different states in each cell to BS matrix
+BSC = [BSC, N_MS_eachcell, N_MS_calling_eachcell, N_MS_downlink_eachcell, N_MS_uplink_eachcell, N_MS_inactive_eachcell];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Propagation
