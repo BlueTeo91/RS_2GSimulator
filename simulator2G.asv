@@ -194,9 +194,7 @@ for i=1:N_MS
     end
 end
 
-temp_BSid = MSC(:,3:6);
-[temp_power,power_index] = sort(temp_power,2);
-temp_BSid = temp_BSid(power_index);
+[temp_power,temp_index] = sort(temp_power,2);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SNR Computation

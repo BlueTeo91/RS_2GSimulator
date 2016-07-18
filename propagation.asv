@@ -1,0 +1,5 @@
+function Pr = propagation()
+L = 69.55 + 26.16*log10(fc) - 13.82*log10(hBS) + (44.9 - 6.55*log10(hBS))*log10(d);
+shadowing = sigmadB*randn(1,1);
+Pr = Pt - (L + shadowing);      % Received Power dB
+end
