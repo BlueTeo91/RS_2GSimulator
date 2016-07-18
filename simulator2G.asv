@@ -78,6 +78,9 @@ N_MStot = round(N_MSe*(Arect/Aservice));           % Number of MS in the rectang
 
 % Assign nearest BS to each MS
 [cellID,shortest_distance] = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
+=======
+cellID,  = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
+>>>>>>> Stashed changes
 
 % Compute distance between MS and nearest BS
 % shortest_distance = computeDistance(BSC(cellID,:),[X_MS, Y_MS]);
@@ -90,12 +93,12 @@ N_MS = length(MSC);                                % Real Number of MS in the se
 
 % Compute distance between each MS and each BS
 distance = zeros(N_MS,N_BS);
-% for i = 1:N_MS
-%     for j = 1:N_BS
-%         distance(i,j) = (computeDistance(MSC(i,:),BSC(j,:)).*Scale);
-%     end
-% end
-distance(find(MSC),find(BSC) = (computeDistance(MSC(i,:),BSC(j,:)).*Scale);
+for i = 1:N_MS
+    for j = 1:N_BS
+        distance(i,j) = (computeDistance(MSC(i,:),BSC(j,:)).*Scale);
+    end
+end
+% distance(MSC,find(BSC)) = (computeDistance(MSC(find(MSC),:),BSC(find(BSC),:)).*Scale);
 
 % [ADD HERE NEW CODE TO SORT THE MATRIX AND INDICES]
 
