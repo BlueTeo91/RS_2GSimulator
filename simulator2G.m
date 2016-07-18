@@ -80,7 +80,7 @@ N_MStot = round(N_MSe*(Arect/Aservice));           % Number of MS in the rectang
 [cellID,shortest_distance] = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
 
 % Compute distance between MS and nearest BS
-% shortest_distance = computeDistance(BSC(cellID,:),[X_MS, Y_MS]);
+shortest_distance2 = computeDistance(BSC(cellID,:),[X_MS, Y_MS]);
 
 % MS temporary matrix
 MSCtemp = [X_MS, Y_MS, cellID, shortest_distance*Scale];
