@@ -44,13 +44,13 @@ Lmax = Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB);      % Maximum Path Loss (dB)
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
-Rb = 271e3;                                        % Bitrate (bit/s)
 N_MSe = 10000;                                     % Estimated Number of MS in the service area
 Pcall_average = 0.5;                               % Average call probability
 Pcall_StDev = 0.05;                                % Call probability standard deviation
 p_DL = 0.45;                                       % Probability of Downlink State
 p_UL = 0.45;                                       % Probability of Uplink State
 p_IN = 0.1;                                        % Probability of Inactive State
+Rb = 271e3;                                        % Bitrate (bit/s)
 
 % Total number of Radio Resource Units available to the operator
 N_RU = 700;
