@@ -1,3 +1,4 @@
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%      HEXAGONAL LAYOUT GENERATOR       %%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,7 +8,8 @@ clear        % Reset variables
 clc          % Clear the command window
 
 
-% Generate hexagonal grid
+%% Generate hexagonal grid
+
 N = 19;                             % NxN grid
 Rad3Over2 = sqrt(3)/2;
 [X, Y] = meshgrid(0:1:N);

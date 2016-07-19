@@ -1,3 +1,4 @@
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%             2G SIMULATOR              %%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -240,7 +241,13 @@ for i = 1:N_MS
     end
 end
 
-N_RU_available = sum(BSC(:,3:4));
+N_RU_available = sum(BSC(:,3)) + sum(BSC(:,4));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Power Control
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SNR Computation
@@ -276,7 +283,7 @@ refCell_MSindex = find(links(:,10)==1);
 network_load = ((N_RU_tot - N_RU_available)/N_RU_tot)*100;
 
 % Reference Cell Load Percentage (BSid=1)
-refCell_load = ((N_RU_cell - BSC(1,3:4))/N_RU_cell)*100;
+refCell_load = ((N_RU_cell - (BSC(1,3) + BSC(1,4)))/N_RU_cell)*100;
 
 % Blocking Rate Percentage
 N_MSblocked = length(find(links(:,10)==-1));
@@ -287,7 +294,7 @@ blocking_rate = (N_MSblocked/(N_MSdownlink + N_MSuplink))*100;
 % Reference Cell Blocking Rate Percentage (BSid=1)
 [row,column] = find((links(:,2:5))==1);
 index_temp = sort(row);
-refCell_blocking_rate = ((length(find(links(index_temp,10) == -1))) / (length(find(links(index_temp,10) == -1)) + (N_RU_cell-BSC(1,3))))*100;
+refCell_blocking_rate = ((length(find(links(index_temp,10) == -1))) / (length(find(links(index_temp,10) == -1)) + (N_RU_cell - (BSC(1,3) + BSC(1,4)))))*100;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
