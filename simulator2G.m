@@ -111,12 +111,6 @@ end
 % Add neighbouring cell ID and distances to MS matrix
 MSC = [MSC, neighbouring_index(:,1:4), neighbouring_distance(:,1:4)];
 
-% Count the number of MS in each cell
-N_MS_eachcell = zeros(N_BS,1);
-for i = 1:N_BS
-    N_MS_eachcell(i,1) = sum(MSC(:,3) == i);
-end
-
 %plotMS(MSC(:,1),MSC(:,2));                         % Plot MS Deployment
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,16 +125,6 @@ calling = (rand(N_MS,1) <= Pcall);
 N_MScalling = sum(calling);                        % Number of calling MS
 MSC = [MSC, calling, zeros(N_MS,1)];               % Add call state column to MS matrix
 
-% Count the number of MS in each cell starting a call
-N_MS_calling_eachcell = zeros(N_BS,1);
-for i = 1:N_BS
-    for k = 1:N_MS
-        if(MSC(k,3) == i && MSC(k,11) == 1)
-            N_MS_calling_eachcell(i,1) = N_MS_calling_eachcell(i,1) + 1;
-        end
-    end
-end
-
 % Assign traffic type based on probabilities defined above
 % 1 = DOWNLINK
 % 2 = UPLINK
@@ -150,43 +134,10 @@ j = 1:N_MScalling;
 i = find(calling);
 MSC(i,12) = traffic_kind(j);                       % Add traffic type column to MS matrix
 
-% Count the number of MS in DOWNLINK state in each cell
-% N_MS_downlink_eachcell = zeros(N_BS,1);
-% for i = 1:N_BS
-%     for k = 1:N_MS
-%         if(MSC(k,3) == i && MSC(k,12) == 1)
-%             N_MS_downlink_eachcell(i,1) = N_MS_downlink_eachcell(i,1) + 1;
-%         end
-%     end
-% end
-
-% Count the number of MS in UPLINK state in each cell
-% N_MS_uplink_eachcell = zeros(N_BS,1);
-% for i = 1:N_BS
-%     for k = 1:N_MS
-%         if(MSC(k,3) == i && MSC(k,12) == 2)
-%             N_MS_uplink_eachcell(i,1) = N_MS_uplink_eachcell(i,1) + 1;
-%         end
-%     end
-% end
-
-% Count the number of MS in SILENT state in each cell
-% N_MS_inactive_eachcell = zeros(N_BS,1);
-% for i = 1:N_BS
-%     for k = 1:N_MS
-%         if(MSC(k,3) == i && MSC(k,12) == 3)
-%             N_MS_inactive_eachcell(i,1) = N_MS_inactive_eachcell(i,1) + 1;
-%         end
-%     end
-% end
-
-% Add columns with number of MS in active state (DOWNLINK + UPLINK)
-% BSC = [BSC, N_MS_downlink_eachcell + N_MS_uplink_eachcell];
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Propagation
 
-% Initialization (max values)
+% Initialization (Beacon Signal = Max Power)
 Pt_BS = Ptmax_BS_dBm;
 Pt_MS = Ptmax_MS_dBm;
 
@@ -219,6 +170,79 @@ end
 links = [links, temp_BSid, temp_power];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% RUs Assignment
+
+N_RU_cellDL = (N_RU/K)/2;                  % Number of RRUs for DL per cell
+N_RU_cellUL = (N_RU/K)/2;                  % Number of RRUs for UL per cell
+
+% Add number of available RUs DL and RUs UL to BSC matrix 
+BSC = [BSC, N_RU_cellDL*ones(N_BS,1), N_RU_cellUL*ones(N_BS,1)];
+N_RU_tot = sum(BSC(:,3:4));
+N_RU_cell = N_RU_cellDL + N_RU_cellUL;
+
+% Admission Control - Directed Retry
+% Scheduling: First-Come-First-Served (FCFS)
+% MSid ordered by arrival
+% Links column 14:
+%    0 -> RU not requested
+%   -1 -> RU not assigned (blocked)
+% BSid -> RU assigned by BSid
+% Links column 15:
+% 0 -> RU not assigned
+% RUs ID
+links = [links, zeros(N_MS,1), zeros(N_MS,1)];
+for i = 1:N_MS
+    switch links(i,1)
+        case 1      % Downlink
+            if((links(i,6)>Prmin_MS_dBm) && ((BSC(links(i,2),3)) > 0))
+                BSC(links(i,2),3) = BSC(links(i,2),3) - 1;
+                links(i,10) = links(i,2);
+                links(i,11) = N_RU_cellDL - BSC(links(i,2),3);
+            elseif((links(i,7)>Prmin_MS_dBm) && ((BSC(links(i,3),3)) > 0))
+                BSC(links(i,3),3) = BSC(links(i,3),3) - 1;
+                links(i,10) = links(i,3);
+                links(i,11) = N_RU_cellDL - BSC(links(i,3),3);
+            elseif((links(i,8)>Prmin_MS_dBm) && ((BSC(links(i,4),3)) > 0))
+                BSC(links(i,4),3) = BSC(links(i,4),3) - 1;
+                links(i,10) = links(i,4);
+                links(i,11) = N_RU_cellDL - BSC(links(i,4),3);
+            elseif((links(i,9)>Prmin_MS_dBm) && ((BSC(links(i,5),3)) > 0))
+                BSC(links(i,5),3) = BSC(links(i,5),3) - 1;
+                links(i,10) = links(i,5);
+                links(i,11) = N_RU_cellDL - BSC(links(i,5),3);
+            else
+                links(i,10) = -1;    % Blocked MS (No RU assigned)
+            end
+        case 2      % Uplink
+            if((links(i,6)>Prmin_BS_dBm) && ((BSC(links(i,2),4)) > 0))
+                BSC(links(i,2),4) = BSC(links(i,2),4) - 1;
+                links(i,10) = links(i,2);
+                links(i,11) = N_RU_cellUL - BSC(links(i,2),4);
+            elseif((links(i,7)>Prmin_BS_dBm) && ((BSC(links(i,3),4)) > 0))
+                BSC(links(i,3),4) = BSC(links(i,3),4) - 1;
+                links(i,10) = links(i,3);
+                links(i,11) = N_RU_cellUL - BSC(links(i,3),4);
+            elseif((links(i,8)>Prmin_BS_dBm) && ((BSC(links(i,4),4)) > 0))
+                BSC(links(i,4),4) = BSC(links(i,4),4) - 1;
+                links(i,10) = links(i,4);
+                links(i,11) = N_RU_cellUL - BSC(links(i,4),4);
+            elseif((links(i,9)>Prmin_BS_dBm) && ((BSC(links(i,5),4)) > 0))
+                BSC(links(i,5),4) = BSC(links(i,5),4) - 1;
+                links(i,10) = links(i,5);
+                links(i,11) = N_RU_cellUL - BSC(links(i,5),4);
+            else
+                links(i,10) = -1;    % Blocked MS (No RU assigned)
+            end
+        case 3      % Silent
+            links(i,10) = 0;         % RU not requested
+        otherwise   % Inactive (Not Calling)
+            links(i,10) = 0;         % RU not requested
+    end
+end
+
+N_RU_available = sum(BSC(:,3:4));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SNR Computation
 
 % Compute SNR for each link
@@ -236,76 +260,26 @@ for i=1:N_MS
     end
 end
 
-% Add SNR columns to links matrix
-links = [links, SNR_dB];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SIR Computation
+
+% Search cell ID of two interfering tiers
+interfering_cellID = 1:K:N_BS;
+
+% Search MS connected to reference cell (BSid=1)
+refCell_MSindex = find(links(:,10)==1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% RUs Assignment
-
-N_RU_cell = N_RU/K;                                 % Number of RRUs per cell
-
-% Add number of available RUs to BSC matrix 
-BSC = [BSC, N_RU_cell*ones(N_BS,1)];
-N_RU_tot = sum(BSC(:,3));
-
-% Admission Control - Directed Retry
-% Scheduling: First-Come-First-Served (FCFS)
-% MSid ordered by arrival
-%    0 -> RU not requested
-%   -1 -> RU not assigned (blocked)
-% BSid -> RU assigned by BSid
-links = [links, zeros(N_MS,1)];
-for i = 1:N_MS
-    switch links(i,1)
-        case 1      % Downlink
-            if((links(i,6)>Prmin_MS_dBm) && ((BSC(links(i,2),3)) > 0))
-                BSC(links(i,2),3) = BSC(links(i,2),3) - 1;
-                links(i,14) = links(i,2);
-            elseif((links(i,7)>Prmin_MS_dBm) && ((BSC(links(i,3),3)) > 0))
-                BSC(links(i,3),3) = BSC(links(i,3),3) - 1;
-                links(i,14) = links(i,3);
-            elseif((links(i,8)>Prmin_MS_dBm) && ((BSC(links(i,4),3)) > 0))
-                BSC(links(i,4),3) = BSC(links(i,4),3) - 1;
-                links(i,14) = links(i,4);
-            elseif((links(i,9)>Prmin_MS_dBm) && ((BSC(links(i,5),3)) > 0))
-                BSC(links(i,5),3) = BSC(links(i,5),3) - 1;
-                links(i,14) = links(i,5);
-            else
-                links(i,14) = -1;    % Blocked MS (No RU assigned)
-            end
-        case 2      % Uplink
-            if((links(i,6)>Prmin_BS_dBm) && ((BSC(links(i,2),3)) > 0))
-                BSC(links(i,2),3) = BSC(links(i,2),3) - 1;
-                links(i,14) = links(i,2);
-            elseif((links(i,7)>Prmin_BS_dBm) && ((BSC(links(i,3),3)) > 0))
-                BSC(links(i,3),3) = BSC(links(i,3),3) - 1;
-                links(i,14) = links(i,3);
-            elseif((links(i,8)>Prmin_BS_dBm) && ((BSC(links(i,4),3)) > 0))
-                BSC(links(i,4),3) = BSC(links(i,4),3) - 1;
-                links(i,14) = links(i,4);
-            elseif((links(i,9)>Prmin_BS_dBm) && ((BSC(links(i,5),3)) > 0))
-                BSC(links(i,5),3) = BSC(links(i,5),3) - 1;
-                links(i,14) = links(i,5);
-            else
-                links(i,14) = -1;    % Blocked MS (No RU assigned)
-            end
-        case 3      % Silent
-            links(i,14) = 0;         % RU not requested
-        otherwise   % Inactive (Not Calling)
-            links(i,14) = 0;         % RU not requested
-    end
-end
-
-N_RU_available = sum(BSC(:,3));
+%% KPIs Computation
 
 % Network Load Percentage
 network_load = ((N_RU_tot - N_RU_available)/N_RU_tot)*100;
 
 % Reference Cell Load Percentage (BSid=1)
-refCell_load = ((N_RU_cell - BSC(1,3))/N_RU_cell)*100;
+refCell_load = ((N_RU_cell - BSC(1,3:4))/N_RU_cell)*100;
 
 % Blocking Rate Percentage
-N_MSblocked = length(find(links(:,14)==-1));
+N_MSblocked = length(find(links(:,10)==-1));
 N_MSdownlink = length(find(links(:,1)==1));
 N_MSuplink = length(find(links(:,1)==2));
 blocking_rate = (N_MSblocked/(N_MSdownlink + N_MSuplink))*100;
@@ -313,14 +287,7 @@ blocking_rate = (N_MSblocked/(N_MSdownlink + N_MSuplink))*100;
 % Reference Cell Blocking Rate Percentage (BSid=1)
 [row,column] = find((links(:,2:5))==1);
 index_temp = sort(row);
-refCell_blocking_rate = ((length(find(links(index_temp,14) == -1))) / (length(find(links(index_temp,14) == -1)) + (N_RU_cell-BSC(1,3))))*100;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% SIR Assignment
-
-
-
-
+refCell_blocking_rate = ((length(find(links(index_temp,10) == -1))) / (length(find(links(index_temp,10) == -1)) + (N_RU_cell-BSC(1,3))))*100;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
