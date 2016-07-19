@@ -178,7 +178,7 @@ for i = 1:N_BS
 end
 
 % Add columns with number of MS in active state (DOWNLINK + UPLINK)
-BSC = [BSC, N_MS_downlink_eachcell + N_MS_uplink_eachcell];
+% BSC = [BSC, N_MS_downlink_eachcell + N_MS_uplink_eachcell];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Propagation
@@ -212,7 +212,7 @@ for i = 1:N_MS
     temp_BSid(i,:) = temp_BSid(i,power_index(i,:));
 end
 
-% Add BSid and power ordered by received power
+% Add BSid and power ordered by received power to links matrix
 links = [links, temp_BSid, temp_power];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -233,10 +233,17 @@ for i=1:N_MS
     end
 end
 
+% Add SNR columns to links matrix
+links = [links, SNR_dB];
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% RUs Assignment
 
 N_RU_cell = 700/K;                                 % Number of RRUs per cell
+
+% Add number of available RUs to BSC matrix 
+BSC = [BSC, N_RU_cell*ones(N_BS,1)];       
+
 
 
 
