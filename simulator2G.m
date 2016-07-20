@@ -56,6 +56,10 @@ p_IN = 0.1;                                        % Probability of Inactive Sta
 
 Rb = 271e3;                                        % Bitrate (bit/s)
 
+% Power Control Parameters
+PCmargin_dB = 25;                                  % Power Control Margin (dB)
+delta = 0.8;                                       % delta [0,1]
+
 % Total number of Radio Resource Units available to the operator
 N_RU = 700;
 
@@ -138,23 +142,19 @@ MSC(i,12) = traffic_kind(j);                       % Add traffic type column to 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Propagation
 
-% Initialization (Beacon Signal = Max Power)
-Pt_BS = Ptmax_BS_dBm;
-Pt_MS = Ptmax_MS_dBm;
-
 % Inizialize first column with traffic type
 links(:,1) = MSC(:,12);
 temp_power = zeros(N_MS,4);
 
-% Compute received power for each link
+% Compute received power for each link (using Beacon Signal)
 for i=1:N_MS
     switch links(i,1)
         case 1      % Downlink
-            temp_power(i,:) = propagation(Pt_BS,fc,hBS,sigmadB,MSC(i,7:10));
+            temp_power(i,:) = propagation(Ptmax_BS_dBm,fc,hBS,sigmadB,MSC(i,7:10));
         case 2      % Uplink
-            temp_power(i,:) = propagation(Pt_MS,fc,hBS,sigmadB,MSC(i,7:10));
+            temp_power(i,:) = propagation(Ptmax_MS_dBm,fc,hBS,sigmadB,MSC(i,7:10));
         case 3      % Silent
-            temp_power(i,:) = propagation(Pt_BS,fc,hBS,sigmadB,MSC(i,7:10));
+            temp_power(i,:) = propagation(Ptmax_BS_dBm,fc,hBS,sigmadB,MSC(i,7:10));
         otherwise   % Inactive (Not Calling)
             temp_power(i,:) = propagation(Ptmax_BS_dBm,fc,hBS,sigmadB,MSC(i,7:10));
     end
@@ -173,25 +173,36 @@ links = [links, temp_BSid, temp_power];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% RUs Assignment
 
-N_RU_cellDL = (N_RU/K)/2;                  % Number of RRUs for DL per cell
-N_RU_cellUL = (N_RU/K)/2;                  % Number of RRUs for UL per cell
+N_RU_cellDL = round((N_RU/K)/2);           % Number of RRUs for DL per cell
+N_RU_cellUL = round((N_RU/K)/2);           % Number of RRUs for UL per cell
 
 % Add number of available RUs DL and RUs UL to BSC matrix 
 BSC = [BSC, N_RU_cellDL*ones(N_BS,1), N_RU_cellUL*ones(N_BS,1)];
-N_RU_tot = sum(BSC(:,3:4));
+N_RU_tot = sum(BSC(:,3)) + sum(BSC(:,4));
 N_RU_cell = N_RU_cellDL + N_RU_cellUL;
 
 % Admission Control - Directed Retry
+
 % Scheduling: First-Come-First-Served (FCFS)
 % MSid ordered by arrival
-% Links column 14:
+
+% Links column 10:
 %    0 -> RU not requested
 %   -1 -> RU not assigned (blocked)
 % BSid -> RU assigned by BSid
-% Links column 15:
-% 0 -> RU not assigned
-% RUs ID
-links = [links, zeros(N_MS,1), zeros(N_MS,1)];
+
+% Links column 11:
+%      0 -> RU not assigned
+% RUs ID -> number of the RU
+
+% Links column 12:
+% 0 -> MS not connected
+% 1 -> MS connected to the first best server
+% 2 -> MS connected to the second best server
+% 3 -> MS connected to the third best server
+% 4 -> MS connected to the fourth best server
+
+links = [links, zeros(N_MS,1), zeros(N_MS,1), zeros(N_MS,1)];
 for i = 1:N_MS
     switch links(i,1)
         case 1      % Downlink
@@ -199,18 +210,22 @@ for i = 1:N_MS
                 BSC(links(i,2),3) = BSC(links(i,2),3) - 1;
                 links(i,10) = links(i,2);
                 links(i,11) = N_RU_cellDL - BSC(links(i,2),3);
+                links(i,12) = 1;
             elseif((links(i,7)>Prmin_MS_dBm) && ((BSC(links(i,3),3)) > 0))
                 BSC(links(i,3),3) = BSC(links(i,3),3) - 1;
                 links(i,10) = links(i,3);
                 links(i,11) = N_RU_cellDL - BSC(links(i,3),3);
+                links(i,12) = 2;
             elseif((links(i,8)>Prmin_MS_dBm) && ((BSC(links(i,4),3)) > 0))
                 BSC(links(i,4),3) = BSC(links(i,4),3) - 1;
                 links(i,10) = links(i,4);
                 links(i,11) = N_RU_cellDL - BSC(links(i,4),3);
+                links(i,12) = 3;
             elseif((links(i,9)>Prmin_MS_dBm) && ((BSC(links(i,5),3)) > 0))
                 BSC(links(i,5),3) = BSC(links(i,5),3) - 1;
                 links(i,10) = links(i,5);
                 links(i,11) = N_RU_cellDL - BSC(links(i,5),3);
+                links(i,12) = 4;
             else
                 links(i,10) = -1;    % Blocked MS (No RU assigned)
             end
@@ -219,18 +234,22 @@ for i = 1:N_MS
                 BSC(links(i,2),4) = BSC(links(i,2),4) - 1;
                 links(i,10) = links(i,2);
                 links(i,11) = N_RU_cellUL - BSC(links(i,2),4);
+                links(i,12) = 1;
             elseif((links(i,7)>Prmin_BS_dBm) && ((BSC(links(i,3),4)) > 0))
                 BSC(links(i,3),4) = BSC(links(i,3),4) - 1;
                 links(i,10) = links(i,3);
                 links(i,11) = N_RU_cellUL - BSC(links(i,3),4);
+                links(i,12) = 2;
             elseif((links(i,8)>Prmin_BS_dBm) && ((BSC(links(i,4),4)) > 0))
                 BSC(links(i,4),4) = BSC(links(i,4),4) - 1;
                 links(i,10) = links(i,4);
                 links(i,11) = N_RU_cellUL - BSC(links(i,4),4);
+                links(i,12) = 3;
             elseif((links(i,9)>Prmin_BS_dBm) && ((BSC(links(i,5),4)) > 0))
                 BSC(links(i,5),4) = BSC(links(i,5),4) - 1;
                 links(i,10) = links(i,5);
                 links(i,11) = N_RU_cellUL - BSC(links(i,5),4);
+                links(i,12) = 4;
             else
                 links(i,10) = -1;    % Blocked MS (No RU assigned)
             end
@@ -246,26 +265,74 @@ N_RU_available = sum(BSC(:,3)) + sum(BSC(:,4));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Power Control
 
+connected_MSindex = find(links(:,11)>0);
+Pt_dBm = zeros(N_MS,1);
+Pr_dBm = zeros(N_MS,1);
+for i = 1:N_MS
+    switch links(i,12)
+        case 1      % MS connected to the first best server
+            if(links(i,1)==1)   % Downlink
+                Pt_dBm(i,1) = Ptmax_BS_dBm;
+            else                % Uplink
+                Pt_dBm(i,1) = Ptmax_MS_dBm;
+            end
+            Pr_dBm(i,1) = links(i,6);
+        case 2      % MS connected to the second best server
+            if(links(i,1)==1)   % Downlink
+                Pt_dBm(i,1) = Ptmax_BS_dBm;
+            else                % Uplink
+                Pt_dBm(i,1) = Ptmax_MS_dBm;
+            end
+            Pr_dBm(i,1) = links(i,7);   
+        case 3      % MS connected to the third best server
+            if(links(i,1)==1)   % Downlink
+                Pt_dBm(i,1) = Ptmax_BS_dBm;
+            else                % Uplink
+                Pt_dBm(i,1) = Ptmax_MS_dBm;
+            end
+            Pr_dBm(i,1) = links(i,8); 
+        case 4      % MS connected to the fourth best server
+            if(links(i,1)==1)   % Downlink
+                Pt_dBm(i,1) = Ptmax_BS_dBm;
+            else                % Uplink
+                Pt_dBm(i,1) = Ptmax_MS_dBm;
+            end
+            Pr_dBm(i,1) = links(i,9);
+    end
+end
 
+connection_type = links(connected_MSindex,1);
+connected_BSid = links(connected_MSindex,10);
+RUid = links(connected_MSindex,11);
+Pt_dBm = Pt_dBm(connected_MSindex,1);
+Pr_dBm = Pr_dBm(connected_MSindex,1);
 
+% Signal Based Power Control (PC)
+PtPC_dBm = zeros(length(connected_MSindex),1);
+PrPC_dBm = zeros(length(connected_MSindex),1);
+for i=1:length(connected_MSindex)
+[PtPC_dBm(i,1), PrPC_dBm(i,1)] = powercontrol(connection_type(i,1),Pt_dBm(i,1),Pr_dBm(i,1),Prmin_BS_dBm,Prmin_MS_dBm,Ptmax_BS_dBm,Ptmin_BS_dBm,Ptmax_MS_dBm,Ptmin_MS_dBm,PCmargin_dB,delta); 
+end
+
+% Create connected_links matrix with the following columns
+connected_links = [connection_type, connected_MSindex, connected_BSid, RUid, PtPC_dBm, PrPC_dBm];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SNR Computation
 
-% Compute SNR for each link
-SNR_dB = zeros(N_MS,4);
-for i=1:N_MS
-    switch links(i,1)
+% Compute SNR for each connected link
+SNR_dB = zeros(length(connected_MSindex),1);
+for i=1:length(connected_MSindex)
+    switch connected_links(i,1)
         case 1      % Downlink
-            SNR_dB(i,:) = computeSNR(links(i,6:9),F_MS,Rb);
+            SNR_dB(i,1) = computeSNR(connected_links(i,6),F_MS,Rb);
         case 2      % Uplink
-            SNR_dB(i,:) = computeSNR(links(i,6:9),F_BS,Rb);
-        case 3      % Silent
-            SNR_dB(i,:) = computeSNR(links(i,6:9),F_MS,Rb);
-        otherwise   % Inactive (Not Calling)
-            SNR_dB(i,:) = computeSNR(links(i,6:9),F_MS,Rb);
+            SNR_dB(i,1) = computeSNR(connected_links(i,6),F_BS,Rb);
     end
 end
+
+% Add SNR (dB) column in connected_links matrix
+connected_links = [connected_links, SNR_dB];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SIR Computation
@@ -274,7 +341,9 @@ end
 interfering_cellID = 1:K:N_BS;
 
 % Search MS connected to reference cell (BSid=1)
-refCell_MSindex = find(links(:,10)==1);
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% KPIs Computation
