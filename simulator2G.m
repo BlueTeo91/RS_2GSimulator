@@ -47,7 +47,7 @@ Lmax = min(Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB),Ptmax_BS_dBm - (Prmin_MS_dBm + 
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
-N_MSe = 13000;                                     % Estimated Number of MS in the service area
+N_MSe = 12500;                                     % Estimated Number of MS in the service area
 
 Pcall_average = 1.0;                               % Average call probability
 Pcall_StDev = 0.00;                                % Call probability standard deviation
@@ -58,11 +58,21 @@ p_UL = 0.5;                                        % Probability of Uplink State
 Rb = 271e3;                                        % Bitrate (bit/s)
 
 % Power Control Parameters
-PCmargin_dB = 3;                                   % Power Control Margin (dB)
-delta = 1;                                         % delta [0,1]
+PCmargin_dB = 65;                                  % Power Control Margin (dB)
+delta = 0.5;                                       % delta [0,1]
 
 % Total number of Radio Resource Units available to the operator
 N_RU = 700;
+
+% Outage Thresholds
+SNR_Out_Thr_DL = computeSNR(Prmin_MS_dBm,F_MS,Rb) + 3;    % Outage SNR Downlink (dB)
+SNR_Out_Thr_UL = computeSNR(Prmin_BS_dBm,F_BS,Rb) + 3;    % Outage SNR Uplink (dB)
+SIR_Out_Thr = 10;                                         % Outage SIR (dB)
+
+% Forced Termination Thresholds
+SNR_FT_Thr_DL = computeSNR(Prmin_MS_dBm,F_MS,Rb) - 3;     % FT SNR Downlink (dB)
+SNR_FT_Thr_UL = computeSNR(Prmin_BS_dBm,F_BS,Rb) - 3;     % FT SNR Uplink (dB)
+SIR_FT_Thr = 5;                                           % FT SIR (dB)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Base Stations Deployment
@@ -344,7 +354,7 @@ interfering_cellid(:,1) = K+1:K:N_BS;
 
 % SIR DOWNLINK
 MS_DLrefCellindex = find(connected_links(:,3)==1 & connected_links(:,1)==1 & connected_links(:,8)==1);
-MS_DLrefCell = [connected_links(MS_DLrefCellindex,2),connected_links(MS_DLrefCellindex,4),zeros(length(MS_DLrefCellindex),1)];
+MS_DLrefCell = [connected_links(MS_DLrefCellindex,2),connected_links(MS_DLrefCellindex,4),zeros(length(MS_DLrefCellindex),1),zeros(length(MS_DLrefCellindex),1)];
 
 for i = 1:length(MS_DLrefCellindex)
     I = 0;
@@ -360,18 +370,19 @@ for i = 1:length(MS_DLrefCellindex)
     C_dBm = connected_links(MS_DLrefCellindex(i,1),6);
     SIR_dB = C_dBm - I_dBm;
     MS_DLrefCell(i,3) = SIR_dB;
+    MS_DLrefCell(i,4) = connected_links(MS_DLrefCellindex(i,1),7);
 end
 
 % SIR UPLINK
 MS_ULrefCellindex = find(connected_links(:,3)==1 & connected_links(:,1)==2 & connected_links(:,8)==1);
-MS_ULrefCell = [connected_links(MS_ULrefCellindex,2),connected_links(MS_ULrefCellindex,4),zeros(length(MS_ULrefCellindex),1)];
+MS_ULrefCell = [connected_links(MS_ULrefCellindex,2),connected_links(MS_ULrefCellindex,4),zeros(length(MS_ULrefCellindex),1),zeros(length(MS_ULrefCellindex),1)];
 
 for i = 1:length(MS_ULrefCellindex)
     I = 0;
     for j = 1:length(interfering_cellid)
         interferinglinks_index = find(connected_links(:,3)==interfering_cellid(j,1) & connected_links(:,1)==2 & connected_links(:,4)==MS_ULrefCell(i,2) & connected_links(:,8)==1);
     end
-    for k = 1:length(interferinglinks_index)        
+    for k = 1:length(interferinglinks_index)
         interferingUL_distance = computeDistance(BSC(1,1:2),MSC(connected_links(interferinglinks_index(k,1),2),1:2));
         I_dBm = propagation(connected_links(interferinglinks_index(k,1),5),fc,hBS,sigmadB,interferingUL_distance*scale);
         I = I + 10^((I_dBm-30)/10);
@@ -380,32 +391,73 @@ for i = 1:length(MS_ULrefCellindex)
     C_dBm = connected_links(MS_ULrefCellindex(i,1),6);
     SIR_dB = C_dBm - I_dBm;
     MS_ULrefCell(i,3) = SIR_dB;
+    MS_ULrefCell(i,4) = connected_links(MS_ULrefCellindex(i,1),7);
 end
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% KPIs Computation
 
-% Network Load Percentage
+% Network Load Percentage (based on assigned RUs)
 network_load = ((N_RU_tot - N_RU_available)/N_RU_tot)*100;
 
 % Reference Cell Load Percentage (BSid=1)
 refCell_load = ((N_RU_cell - (BSC(1,3) + BSC(1,4)))/N_RU_cell)*100;
 
-% Blocking Rate Percentage
+% Blocking Rate (%)
+if K==7
+    border_cellsID = [51,52,63,58,59,60,65,66,67,72,73,74,75,80,81,82,87,88,89,90,95,96,97,102,103,104,105,110,11,112,117,118,119,114,125,126,121,132,133,128,129,56];
+end
+
+for i = 1:length(border_cellsID)
+    border_links_index = find(links(:,10)==border_cellsID(i));
+    links(border_links_index,:) = [];
+end
+
 N_MSblocked = length(find(links(:,10)==-1));
 N_MSdownlink = length(find(links(:,1)==1));
 N_MSuplink = length(find(links(:,1)==2));
 blocking_rate = (N_MSblocked/(N_MSdownlink + N_MSuplink))*100;
 
-% Reference Cell Blocking Rate Percentage (BSid=1)
+% Reference Cell Blocking Rate (%) (BSid=1)
 [row,column] = find(links(:,2:5)==1);
 index_temp = sort(row);
 RU_temp = links(index_temp,10);
 blocked_index_refCell = find(RU_temp(:,1)==-1);
 N_MSblocked_refCell = length(blocked_index_refCell);
-
 refCell_blocking_rate = (N_MSblocked_refCell / (N_MSblocked_refCell + (N_RU_cell - BSC(1,3) + BSC(1,4))))*100;
+
+% Outage Rate (%) (BSid=1)
+N_MS_Out_DL = 0;
+for i = 1:length(MS_DLrefCell)
+    if(MS_DLrefCell(i,4)<SNR_Out_Thr_DL || MS_DLrefCell(i,3)<SIR_Out_Thr)
+        N_MS_Out_DL = N_MS_Out_DL+1;
+    end
+end
+N_MS_Out_UL = 0;
+for i = 1:length(MS_ULrefCell)
+    if(MS_ULrefCell(i,4)<SNR_Out_Thr_UL || MS_ULrefCell(i,3)<SIR_Out_Thr)
+        N_MS_Out_UL = N_MS_Out_UL+1;
+    end
+end
+
+outage_rate = ((N_MS_Out_DL+N_MS_Out_UL)/(length(MS_DLrefCell)+length(MS_ULrefCell)))*100;
+
+% Forced Termination Rate (%) (BSid=1)
+N_MS_FT_DL = 0;
+for i = 1:length(MS_DLrefCell)
+    if(MS_DLrefCell(i,4)<SNR_FT_Thr_DL || MS_DLrefCell(i,3)<SIR_FT_Thr)
+        N_MS_FT_DL = N_MS_FT_DL+1;
+    end
+end
+N_MS_FT_UL = 0;
+for i = 1:length(MS_ULrefCell)
+    if(MS_ULrefCell(i,4)<SNR_FT_Thr_UL || MS_ULrefCell(i,3)<SIR_FT_Thr)
+        N_MS_FT_UL = N_MS_FT_UL+1;
+    end
+end
+
+forced_termination_rate = ((N_MS_FT_DL+N_MS_FT_UL)/(length(MS_DLrefCell)+length(MS_ULrefCell)))*100;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
