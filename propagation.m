@@ -1,4 +1,4 @@
-function Pr = propagation(Pt,fc,hBS,sigmadB,d)
+function Pr_dBm = propagation(Pt_dBm,fc,hBS,sigmadB,d)
 % Original Okumura Hata Formula + Shadowing
 % Pt is the transmitted power depending on traffic kind
 L = 69.55 + 26.16*log10(fc) - 13.82*log10(hBS) + (44.9 - 6.55*log10(hBS))*log10(d/1000);
@@ -7,5 +7,5 @@ L = 69.55 + 26.16*log10(fc) - 13.82*log10(hBS) + (44.9 - 6.55*log10(hBS))*log10(
 shadowing = sigmadB*randn(1,length(d));
 
 % Received Power dB
-Pr = Pt - (L + shadowing);
+Pr_dBm = Pt_dBm - (L + shadowing);
 end

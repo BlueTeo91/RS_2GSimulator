@@ -39,7 +39,9 @@ F_MS = 10^(F_MS_dB/10);                            % MS noise figure
 sigmadB = 8;                                       % Shadowing St. Dev
 Pcov = 0.95;                                       % Coverage Probability
 Mf_dB = sigmadB*sqrt(2)*erfinv(2*Pcov-1);          % Shadowing (Slow fading) Margin (dB)
-Lmax = Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB);      % Maximum Path Loss (dB)
+
+% Maximum Path Loss (dB)
+Lmax = min(Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB),Ptmax_BS_dBm - (Prmin_MS_dBm + Mf_dB));
 
 % Original Okumura Model -> Cell Radius (meters)
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
@@ -76,7 +78,7 @@ else
     
 end
 r = (1/sqrt(3))/N;                                 % Cell radius in the plot
-Scale = R/r;                                       % Scaling Factor
+scale = R/r;                                       % Scaling Factor
 
 %plotBS(BSC(:,1),BSC(:,2),r,K);                     % Plot BS Deployment
 
@@ -84,9 +86,9 @@ Scale = R/r;                                       % Scaling Factor
 %% Mobile Stations Deployment
 
 % Area of the rectangle (square km)
-Arect = (((0.8508-0.1519)*(0.8421-0.1579))*(Scale^2))/(1e6);
+Arect = (((0.8508-0.1519)*(0.8421-0.1579))*(scale^2))/(1e6);
 a = r*sqrt(3)/2;                                   % Apothem of the hexagon (plot)
-Aservice = (((((6*r)*a)/2)*N_BS)*(Scale^2))/(1e6); % Area of the service area (square km)
+Aservice = (((((6*r)*a)/2)*N_BS)*(scale^2))/(1e6); % Area of the service area (square km)
 N_MStot = round(N_MSe*(Arect/Aservice));           % Number of MS in the rectangular area
 
 % MS coordinates generation
@@ -96,7 +98,7 @@ N_MStot = round(N_MSe*(Arect/Aservice));           % Number of MS in the rectang
 [cellID,shortest_distance] = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
 
 % MS temporary matrix
-MSCtemp = [X_MS, Y_MS, cellID, shortest_distance*Scale];
+MSCtemp = [X_MS, Y_MS, cellID, shortest_distance*scale];
 MSindex = find(MSCtemp(:,4) < R);                  % Index of MSCtemp with distance less than cell radius
 MSC = MSCtemp(MSindex,1:2);                        % Save in MSC only the MS inside the service area
 N_MS = length(MSC);                                % Real Number of MS in the service area
@@ -105,7 +107,7 @@ N_MS = length(MSC);                                % Real Number of MS in the se
 distance = zeros(N_MS,N_BS);
 for i = 1:N_MS
     for j = 1:N_BS
-        distance(i,j) = (computeDistance(MSC(i,:),BSC(j,:)).*Scale);
+        distance(i,j) = (computeDistance(MSC(i,:),BSC(j,:)).*scale);
     end
 end
 
@@ -125,7 +127,7 @@ Pcall = abs(Pcall_average+Pcall_StDev*randn(1,1));
 
 % Generate random vector of 0s and 1s -> 1 = calling, 0 = not calling
 % (with a percentage of Pcall users calling)
-calling = (rand(N_MS,1) <= Pcall);
+calling = rand(N_MS,1) <= Pcall;
 N_MScalling = sum(calling);                        % Number of calling MS
 MSC = [MSC, calling, zeros(N_MS,1)];               % Add call state column to MS matrix
 
@@ -172,7 +174,7 @@ links = [links, temp_BSid, temp_power];
 N_RU_cellDL = round((N_RU/K)/2);           % Number of RRUs for DL per cell
 N_RU_cellUL = round((N_RU/K)/2);           % Number of RRUs for UL per cell
 
-% Add number of available RUs DL and RUs UL to BSC matrix 
+% Add number of available RUs DL and RUs UL to BSC matrix
 BSC = [BSC, N_RU_cellDL*ones(N_BS,1), N_RU_cellUL*ones(N_BS,1)];
 N_RU_tot = sum(BSC(:,3)) + sum(BSC(:,4));
 N_RU_cell = N_RU_cellDL + N_RU_cellUL;
@@ -259,7 +261,7 @@ N_RU_available = sum(BSC(:,3)) + sum(BSC(:,4));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Power Control
 
-connected_MSindex = find(links(:,11)>0);
+connected_MSid = find(links(:,11)>0);
 Pt_dBm = zeros(N_MS,1);
 Pr_dBm = zeros(N_MS,1);
 for i = 1:N_MS
@@ -277,14 +279,14 @@ for i = 1:N_MS
             else                % Uplink
                 Pt_dBm(i,1) = Ptmax_MS_dBm;
             end
-            Pr_dBm(i,1) = links(i,7);   
+            Pr_dBm(i,1) = links(i,7);
         case 3      % MS connected to the third best server
             if(links(i,1)==1)   % Downlink
                 Pt_dBm(i,1) = Ptmax_BS_dBm;
             else                % Uplink
                 Pt_dBm(i,1) = Ptmax_MS_dBm;
             end
-            Pr_dBm(i,1) = links(i,8); 
+            Pr_dBm(i,1) = links(i,8);
         case 4      % MS connected to the fourth best server
             if(links(i,1)==1)   % Downlink
                 Pt_dBm(i,1) = Ptmax_BS_dBm;
@@ -295,28 +297,28 @@ for i = 1:N_MS
     end
 end
 
-connection_type = links(connected_MSindex,1);
-connected_BSid = links(connected_MSindex,10);
-RUid = links(connected_MSindex,11);
-Pt_dBm = Pt_dBm(connected_MSindex,1);
-Pr_dBm = Pr_dBm(connected_MSindex,1);
+connection_type = links(connected_MSid,1);
+connected_BSid = links(connected_MSid,10);
+RUid = links(connected_MSid,11);
+Pt_dBm = Pt_dBm(connected_MSid,1);
+Pr_dBm = Pr_dBm(connected_MSid,1);
 
 % Signal Based Power Control (PC)
-PtPC_dBm = zeros(length(connected_MSindex),1);
-PrPC_dBm = zeros(length(connected_MSindex),1);
-for i=1:length(connected_MSindex)
-[PtPC_dBm(i,1), PrPC_dBm(i,1)] = powercontrol(connection_type(i,1),Pt_dBm(i,1),Pr_dBm(i,1),Prmin_BS_dBm,Prmin_MS_dBm,Ptmax_BS_dBm,Ptmin_BS_dBm,Ptmax_MS_dBm,Ptmin_MS_dBm,PCmargin_dB,delta); 
+PtPC_dBm = zeros(length(connected_MSid),1);
+PrPC_dBm = zeros(length(connected_MSid),1);
+for i=1:length(connected_MSid)
+    [PtPC_dBm(i,1), PrPC_dBm(i,1)] = powercontrol(connection_type(i,1),Pt_dBm(i,1),Pr_dBm(i,1),Prmin_BS_dBm,Prmin_MS_dBm,Ptmax_BS_dBm,Ptmin_BS_dBm,Ptmax_MS_dBm,Ptmin_MS_dBm,PCmargin_dB,delta);
 end
 
 % Create connected_links matrix with the following columns
-connected_links = [connection_type, connected_MSindex, connected_BSid, RUid, PtPC_dBm, PrPC_dBm];
+connected_links = [connection_type, connected_MSid, connected_BSid, RUid, PtPC_dBm, PrPC_dBm];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SNR Computation
 
 % Compute SNR for each connected link
-SNR_dB = zeros(length(connected_MSindex),1);
-for i=1:length(connected_MSindex)
+SNR_dB = zeros(length(connected_MSid),1);
+for i=1:length(connected_MSid)
     switch connected_links(i,1)
         case 1      % Downlink
             SNR_dB(i,1) = computeSNR(connected_links(i,6),F_MS,Rb);
@@ -328,23 +330,38 @@ end
 % Add SNR (dB) column in connected_links matrix
 connected_links = [connected_links, SNR_dB];
 
+% Add state column
+% Active = 1
+% Silent = 0
+state = rand(length(connected_links),1) <= 0.45;
+connected_links = [connected_links, state];
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SIR Computation
 
 % Search cell ID of two interfering tiers
-interfering_cellid(:,1) = 1:K:N_BS;
+interfering_cellid(:,1) = K+1:K:N_BS;
 
-% Search MS connected to reference cell (BSid=1)
-MS_refCellindex = find(connected_links(:,3)==1);
+% Search MS connected to reference cell (BSid=1) in DOWNLINK
+MS_DLrefCellindex = find(connected_links(:,3)==1 & connected_links(:,1)==1 & connected_links(:,8)==1);
+MS_DLrefCell = [connected_links(MS_DLrefCellindex,2),connected_links(MS_DLrefCellindex,4),zeros(length(MS_DLrefCellindex),1)];
 
-% DOWNLINK CASE
-MS_DL_refCellid = connected_links(connected_links(MS_refCellindex,1)==1,2);
-interfDL_distance = zeros(length(MS_DL_refCellid),length(interfering_cellid));
-for i = 1:length(MS_DL_refCellid)
+for i = 1:length(MS_DLrefCellindex)
+    I = 0;
     for j = 1:length(interfering_cellid)
-        interfDL_distance(i,j) = computeDistance(MSC(MS_DL_refCellid(i,1),1:2),BSC(interfering_cellid(j,1),1:2));
+        interferinglinks_index = find(connected_links(:,3)==interfering_cellid(j,1) & connected_links(:,1)==1 & connected_links(:,4)==MS_DLrefCell(i,2) & connected_links(:,8)==1);
     end
+    for k = 1:length(interferinglinks_index)
+        interferingDL_distance = computeDistance(MSC(MS_DLrefCell(i,1),1:2),BSC(connected_links(interferinglinks_index(k,1)),1:2));
+        I_dBm = propagation(connected_links(interferinglinks_index(k,1),5),fc,hBS,sigmadB,interferingDL_distance*scale);
+        I = I + 10^((I_dBm-30)/10);
+    end
+    I_dBm = 10*log10(I);
+    C_dBm = connected_links(MS_DLrefCellindex(i,1),6);
+    SIR_dB = C_dBm - I_dBm;
+    MS_DLrefCell(i,3) = SIR_dB;
 end
+
 
 
 
@@ -365,9 +382,13 @@ N_MSuplink = length(find(links(:,1)==2));
 blocking_rate = (N_MSblocked/(N_MSdownlink + N_MSuplink))*100;
 
 % Reference Cell Blocking Rate Percentage (BSid=1)
-[row,column] = find((links(:,2:5))==1);
+[row,column] = find(links(:,2:5)==1);
 index_temp = sort(row);
-refCell_blocking_rate = ((length(find(links(index_temp,10) == -1))) / (length(find(links(index_temp,10) == -1)) + (N_RU_cell - (BSC(1,3) + BSC(1,4)))))*100;
+Ru_temp = links(index_temp,10);
+blocked_index_refCell = find(Ru_temp(:,1)==-1);
+N_MSblocked_refCell = length(blocked_index_refCell);
+
+refCell_blocking_rate = (N_MSblocked_refCell / (N_MSblocked_refCell + (N_RU_cell - BSC(1,3) + BSC(1,4))))*100;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
