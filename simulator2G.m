@@ -13,12 +13,12 @@ tic          % Start stopwatch
 
 % Antennas Parameters
 Ptmax_BS = 10;                                     % BS Max TX Power (Watts)
-Ptmin_BS = 2;                                      % BS Min TX Power (Watts)
+Ptmin_BS = 0.01;                                   % BS Min TX Power (Watts)
 Ptmax_BS_dBm = (10*log10(Ptmax_BS))+30;            % BS Max TX Power (dBm)
 Ptmin_BS_dBm = (10*log10(Ptmin_BS))+30;            % BS Min TX Power (dBm)
 
 Ptmax_MS = 2;                                      % MS Max TX Power (Watts)
-Ptmin_MS = 0.002;                                  % MS Min TX Power (Watts)
+Ptmin_MS = 0.00002;                                % MS Min TX Power (Watts)
 Ptmax_MS_dBm = (10*log10(Ptmax_MS))+30;            % MS Max TX Power (dBm)
 Ptmin_MS_dBm = (10*log10(Ptmin_MS))+30;            % MS Min TX Power (dBm)
 
@@ -26,7 +26,7 @@ Prmin_BS_dBm = -104;                               % BS Sensitivity (dBm)
 Prmin_MS_dBm = -102;                               % MS Sensitivity (dBm)
 
 hBS = 30;                                          % BS height (meters)
-fc = 900;                                          % Carrier Frequency (MHz)
+fc = 1800;                                         % Carrier Frequency (MHz)
 
 % Noise Figures
 F_BS_dB = 5;                                       % BS noise figure (dB)
@@ -37,28 +37,27 @@ F_MS = 10^(F_MS_dB/10);                            % MS noise figure
 
 % Propagation Parameters
 sigmadB = 8;                                       % Shadowing St. Dev
-LP0 = 0.99;                                        % Location Probability
-Mf_dB = sigmadB*sqrt(2)*erfinv(2*LP0-1);           % Shadowing (Slow fading) Margin (dB)
+Pcov = 0.95;                                       % Coverage Probability
+Mf_dB = sigmadB*sqrt(2)*erfinv(2*Pcov-1);          % Shadowing (Slow fading) Margin (dB)
 Lmax = Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB);      % Maximum Path Loss (dB)
 
 % Original Okumura Model -> Cell Radius (meters)
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
-N_MSe = 48000;                                     % Estimated Number of MS in the service area
+N_MSe = 13000;                                     % Estimated Number of MS in the service area
 
-Pcall_average = 0.3;                               % Average call probability
+Pcall_average = 1.0;                               % Average call probability
 Pcall_StDev = 0.00;                                % Call probability standard deviation
 
-p_DL = 0.45;                                       % Probability of Downlink State
-p_UL = 0.45;                                       % Probability of Uplink State
-p_IN = 0.1;                                        % Probability of Inactive State
+p_DL = 0.5;                                        % Probability of Downlink State
+p_UL = 0.5;                                        % Probability of Uplink State                                        % Probability of Inactive State
 
 Rb = 271e3;                                        % Bitrate (bit/s)
 
 % Power Control Parameters
-PCmargin_dB = 25;                                  % Power Control Margin (dB)
-delta = 0.8;                                       % delta [0,1]
+PCmargin_dB = 3;                                   % Power Control Margin (dB)
+delta = 1;                                         % delta [0,1]
 
 % Total number of Radio Resource Units available to the operator
 N_RU = 700;
@@ -133,8 +132,7 @@ MSC = [MSC, calling, zeros(N_MS,1)];               % Add call state column to MS
 % Assign traffic type based on probabilities defined above
 % 1 = DOWNLINK
 % 2 = UPLINK
-% 3 = SILENT
-traffic_kind = randsample(3,N_MScalling,true,[p_DL p_UL p_IN]);
+traffic_kind = randsample(2,N_MScalling,true,[p_DL p_UL]);
 j = 1:N_MScalling;
 i = find(calling);
 MSC(i,12) = traffic_kind(j);                       % Add traffic type column to MS matrix
@@ -153,8 +151,6 @@ for i=1:N_MS
             temp_power(i,:) = propagation(Ptmax_BS_dBm,fc,hBS,sigmadB,MSC(i,7:10));
         case 2      % Uplink
             temp_power(i,:) = propagation(Ptmax_MS_dBm,fc,hBS,sigmadB,MSC(i,7:10));
-        case 3      % Silent
-            temp_power(i,:) = propagation(Ptmax_BS_dBm,fc,hBS,sigmadB,MSC(i,7:10));
         otherwise   % Inactive (Not Calling)
             temp_power(i,:) = propagation(Ptmax_BS_dBm,fc,hBS,sigmadB,MSC(i,7:10));
     end
@@ -253,8 +249,6 @@ for i = 1:N_MS
             else
                 links(i,10) = -1;    % Blocked MS (No RU assigned)
             end
-        case 3      % Silent
-            links(i,10) = 0;         % RU not requested
         otherwise   % Inactive (Not Calling)
             links(i,10) = 0;         % RU not requested
     end
@@ -338,9 +332,19 @@ connected_links = [connected_links, SNR_dB];
 %% SIR Computation
 
 % Search cell ID of two interfering tiers
-interfering_cellID = 1:K:N_BS;
+interfering_cellid(:,1) = 1:K:N_BS;
 
 % Search MS connected to reference cell (BSid=1)
+MS_refCellindex = find(connected_links(:,3)==1);
+
+% DOWNLINK CASE
+MS_DL_refCellid = connected_links(connected_links(MS_refCellindex,1)==1,2);
+interfDL_distance = zeros(length(MS_DL_refCellid),length(interfering_cellid));
+for i = 1:length(MS_DL_refCellid)
+    for j = 1:length(interfering_cellid)
+        interfDL_distance(i,j) = computeDistance(MSC(MS_DL_refCellid(i,1),1:2),BSC(interfering_cellid(j,1),1:2));
+    end
+end
 
 
 

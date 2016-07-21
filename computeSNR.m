@@ -1,4 +1,5 @@
 function SNR_dB = computeSNR(Pr_dBm,F,Rb)
+% Compute SNR
 % Compute System Equivalent Noise Temperature (°K)
 Tsyst = 290+290*(F-1);
 
