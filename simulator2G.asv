@@ -362,6 +362,13 @@ for i = 1:length(MS_DLrefCellindex)
     MS_DLrefCell(i,3) = SIR_dB;
 end
 
+
+
+
+
+
+
+
 % SIR UPLINK
 MS_ULrefCellindex = find(connected_links(:,3)==1 & connected_links(:,1)==2 & connected_links(:,8)==1);
 MS_ULrefCell = [connected_links(MS_ULrefCellindex,2),connected_links(MS_ULrefCellindex,4),zeros(length(MS_ULrefCellindex),1)];
@@ -373,14 +380,17 @@ for i = 1:length(MS_ULrefCellindex)
     end
     for k = 1:length(interferinglinks_index)        
         interferingUL_distance = computeDistance(BSC(1,1:2),MSC(connected_links(interferinglinks_index(k,1),2),1:2));
-        I_dBm = propagation(connected_links(interferinglinks_index(k,1),5),fc,hBS,sigmadB,interferingUL_distance*scale);
+        I_dBm = propagation(connected_links(interferinglinks_index(k,1),5),fc,hBS,sigmadB,interferingDL_distance*scale);
         I = I + 10^((I_dBm-30)/10);
     end
     I_dBm = 10*log10(I);
-    C_dBm = connected_links(MS_ULrefCellindex(i,1),6);
+    C_dBm = connected_links(MS_DLrefCellindex(i,1),6);
     SIR_dB = C_dBm - I_dBm;
-    MS_ULrefCell(i,3) = SIR_dB;
+    MS_DLrefCell(i,3) = SIR_dB;
 end
+
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
