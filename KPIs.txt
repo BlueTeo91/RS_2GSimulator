@@ -1,0 +1,6 @@
+Network Load: 95.1579
+Reference Cell Load: 95.0000
+Blocking Rate: 1.2835
+Reference Cell Blocking Rate: 0.9434
+Outage Rate: 9.5238
+Forced Termination Rate: 0.0000
