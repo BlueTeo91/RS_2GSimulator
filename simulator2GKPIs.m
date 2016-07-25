@@ -150,7 +150,7 @@ for snap = 1:snap_number
         
         % Add neighbouring cell ID and distances to MS matrix
         MSC = [MSC(:,1:2), neighbouring_index(:,1:4), neighbouring_distance(:,1:4)];
-        
+           
         %plotMS(MSC(:,1),MSC(:,2));                         % Plot MS Deployment
     end
     
@@ -165,7 +165,7 @@ for snap = 1:snap_number
     calling = rand(N_MS,1) <= Pcall;
     N_MScalling = sum(calling);                        % Number of calling MS
     MSC = [MSC(:,1:10), calling, zeros(N_MS,1)];       % Add call state column to MS matrix
-    
+   
     % Assign traffic type based on probabilities defined above
     % 1 = DOWNLINK
     % 2 = UPLINK
@@ -178,6 +178,7 @@ for snap = 1:snap_number
     %% Propagation
     
     % Inizialize first column with traffic type
+    links = [];                                        % Inizialization of links for a new snapshot
     links(:,1) = MSC(:,12);
     temp_power = zeros(N_MS,4);
     
