@@ -12,7 +12,7 @@ tic          % Start stopwatch
 %% Simulator Parameters
 
 % Number of Snapshots
-snap_number = 2;
+snap_number = 19;
 
 % Number of Snapshots between two new MS deployments
 MS_update = 10;
@@ -53,7 +53,7 @@ Lmax = min(Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB),Ptmax_BS_dBm - (Prmin_MS_dBm + 
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
-N_MSe = 12500;                                     % Estimated Number of MS in the service area
+N_MSe = 5000;                                     % Estimated Number of MS in the service area
 
 Pcall_average = 1.0;                               % Average call probability
 Pcall_StDev = 0.00;                                % Call probability standard deviation
@@ -64,8 +64,8 @@ p_UL = 0.5;                                        % Probability of Uplink State
 Rb = 271e3;                                        % Bitrate (bit/s)
 
 % Power Control Parameters
-PCmargin_dB = 65;                                  % Power Control Margin (dB)
-delta = 0.5;                                       % delta [0,1]
+PCmargin_dB = 100;                                  % Power Control Margin (dB)
+delta = 1;                                       % delta [0,1]
 
 % Total number of Radio Resource Units available to the operator
 N_RU = 700;
@@ -94,7 +94,7 @@ forced_termination_rate_TOT = 0;
 filenameBS = 'BS_K=7.txt';                         % File with BS coordinates
 [X_BS,Y_BS] = BSread(filenameBS);                  % Read from file
 BSC = [X_BS,Y_BS];                                 % BS Coordinates
-N_BS = length(BSC);                                % Number of BS (considering 2 interfering tiers)
+N_BS = length(BSC(:,1));                                % Number of BS (considering 2 interfering tiers)
 if(strcmp(filenameBS,'BS_K=7.txt'))
     K = 7;                                         % Cluster Size
     N = 19;                                        % Normalizing factor (plot)
@@ -135,7 +135,7 @@ for snap = 1:snap_number
         MSCtemp = [X_MS, Y_MS, cellID, shortest_distance*scale];
         MSindex = find(MSCtemp(:,4) < R);                  % Index of MSCtemp with distance less than cell radius
         MSC = MSCtemp(MSindex,1:2);                        % Save in MSC only the MS inside the service area
-        N_MS = length(MSC);                                % Real Number of MS in the service area
+        N_MS = length(MSC(:,1));                                % Real Number of MS in the service area
         
         % Compute distance between each MS and each BS
         distance = zeros(N_MS,N_BS);
@@ -369,7 +369,7 @@ for snap = 1:snap_number
     % Add state column
     % Active = 1
     % Silent = 0
-    state = rand(length(connected_links),1) <= 0.45;
+    state = rand(length(connected_links(:,1)),1) <= 0.45;
     connected_links = [connected_links(:,1:7), state];
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -462,37 +462,37 @@ for snap = 1:snap_number
     
     % Outage Rate (%) (BSid=1)
     N_MS_Out_DL = 0;
-    for i = 1:length(MS_DLrefCell)
+    for i = 1:length(MS_DLrefCell(:,1))
         if(MS_DLrefCell(i,4)<SNR_Out_Thr_DL || MS_DLrefCell(i,3)<SIR_Out_Thr)
             N_MS_Out_DL = N_MS_Out_DL+1;
         end
     end
     N_MS_Out_UL = 0;
-    for i = 1:length(MS_ULrefCell)
+    for i = 1:length(MS_ULrefCell(:,1))
         if(MS_ULrefCell(i,4)<SNR_Out_Thr_UL || MS_ULrefCell(i,3)<SIR_Out_Thr)
             N_MS_Out_UL = N_MS_Out_UL+1;
         end
     end
     
-    outage_rate = ((N_MS_Out_DL+N_MS_Out_UL)/(length(MS_DLrefCell)+length(MS_ULrefCell)))*100;
+    outage_rate = ((N_MS_Out_DL+N_MS_Out_UL)/(length(MS_DLrefCell(:,1))+length(MS_ULrefCell(:,1))))*100;
     % Incremental sum of outage_rate for KPI computation
     outage_rate_TOT = outage_rate_TOT + outage_rate;
     
     % Forced Termination Rate (%) (BSid=1)
     N_MS_FT_DL = 0;
-    for i = 1:length(MS_DLrefCell)
+    for i = 1:length(MS_DLrefCell(:,1))
         if(MS_DLrefCell(i,4)<SNR_FT_Thr_DL || MS_DLrefCell(i,3)<SIR_FT_Thr)
             N_MS_FT_DL = N_MS_FT_DL+1;
         end
     end
     N_MS_FT_UL = 0;
-    for i = 1:length(MS_ULrefCell)
+    for i = 1:length(MS_ULrefCell(:,1))
         if(MS_ULrefCell(i,4)<SNR_FT_Thr_UL || MS_ULrefCell(i,3)<SIR_FT_Thr)
             N_MS_FT_UL = N_MS_FT_UL+1;
         end
     end
     
-    forced_termination_rate = ((N_MS_FT_DL+N_MS_FT_UL)/(length(MS_DLrefCell)+length(MS_ULrefCell)))*100;
+    forced_termination_rate = ((N_MS_FT_DL+N_MS_FT_UL)/(length(MS_DLrefCell(:,1))+length(MS_ULrefCell(:,1))))*100;
     % Incremental sum of outage_rate for KPI computation
     forced_termination_rate_TOT = forced_termination_rate_TOT + forced_termination_rate;
     
