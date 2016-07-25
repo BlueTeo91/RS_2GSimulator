@@ -12,7 +12,7 @@ tic          % Start stopwatch
 %% Simulator Parameters
 
 % Number of Snapshots
-snap_number = 1;
+snap_number = 2;
 
 % Number of Snapshots between two new MS deployments
 MS_update = 10;
@@ -153,6 +153,7 @@ for snap = 1:snap_number
         
         %plotMS(MSC(:,1),MSC(:,2));                         % Plot MS Deployment
     end
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Traffic Generation
     
@@ -511,6 +512,6 @@ fprintf(fileID,'%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4t\t%.4f\t%.4f\n',delta,PCmargin
 fclose('all');
 
 % Print to video
-fprintf('PC Parameters: delta = %.4f\tMargin = %d dB\nNetwork Load: %.4f\nReference Cell Load: %.4f\nBlocking Rate: %.4f\nReference Cell Blocking Rate: %.4f\nOutage Rate: %.4f\nForced Termination Rate: %.4f\n',delta,PCmargin_dB,network_load_TOT,refCell_load_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);
+fprintf('PC Parameters: Delta = %.4f\tMargin = %d dB\nNetwork Load: %.4f\nReference Cell Load: %.4f\nBlocking Rate: %.4f\nReference Cell Blocking Rate: %.4f\nOutage Rate: %.4f\nForced Termination Rate: %.4f\n',delta,PCmargin_dB,network_load_TOT,refCell_load_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);
 
 toc          % Stop stopwatch
