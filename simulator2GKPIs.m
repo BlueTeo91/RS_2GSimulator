@@ -12,7 +12,7 @@ tic          % Start stopwatch
 %% Simulator Parameters
 
 % Number of Snapshots
-snap_number = 19;
+snap_number = 99;
 
 % Number of Snapshots between two new MS deployments
 MS_update = 10;
@@ -53,7 +53,7 @@ Lmax = min(Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB),Ptmax_BS_dBm - (Prmin_MS_dBm + 
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
-N_MSe = 5000;                                     % Estimated Number of MS in the service area
+N_MSe = 12700;                                     % Estimated Number of MS in the service area
 
 Pcall_average = 1.0;                               % Average call probability
 Pcall_StDev = 0.00;                                % Call probability standard deviation
@@ -64,8 +64,8 @@ p_UL = 0.5;                                        % Probability of Uplink State
 Rb = 271e3;                                        % Bitrate (bit/s)
 
 % Power Control Parameters
-PCmargin_dB = 100;                                  % Power Control Margin (dB)
-delta = 1;                                       % delta [0,1]
+PCmargin_dB = 3;                                   % Power Control Margin (dB)
+delta = 1;                                         % delta [0,1]
 
 % Total number of Radio Resource Units available to the operator
 N_RU = 700;
