@@ -12,7 +12,7 @@ tic          % Start stopwatch
 %% Simulator Parameters
 
 % Number of Snapshots
-snap_number = 99;
+snapshots = 19;
 
 % Number of Snapshots between two new MS deployments
 MS_update = 10;
@@ -53,6 +53,7 @@ Lmax = min(Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB),Ptmax_BS_dBm - (Prmin_MS_dBm + 
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
+K = 3;                                             % Cluster Size (3 or 7)
 N_MSe = 12700;                                     % Estimated Number of MS in the service area
 
 Pcall_average = 1.0;                               % Average call probability
@@ -65,7 +66,7 @@ Rb = 271e3;                                        % Bitrate (bit/s)
 
 % Power Control Parameters
 PCmargin_dB = 3;                                   % Power Control Margin (dB)
-delta = 1;                                         % delta [0,1]
+delta = 1;                                         % Delta [0,1]
 
 % Total number of Radio Resource Units available to the operator
 N_RU = 700;
@@ -91,16 +92,16 @@ forced_termination_rate_TOT = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Base Stations Deployment
 
-filenameBS = 'BS_K=7.txt';                         % File with BS coordinates
+if(K==3)
+    filenameBS = 'BS_K=3.txt';                     % File with BS coordinates (K=3)
+elseif(K==7)
+    filenameBS = 'BS_K=7.txt';                     % File with BS coordinates (K=7)
+end
+
 [X_BS,Y_BS] = BSread(filenameBS);                  % Read from file
 BSC = [X_BS,Y_BS];                                 % BS Coordinates
-N_BS = length(BSC(:,1));                                % Number of BS (considering 2 interfering tiers)
-if(strcmp(filenameBS,'BS_K=7.txt'))
-    K = 7;                                         % Cluster Size
-    N = 19;                                        % Normalizing factor (plot)
-else
-    
-end
+N_BS = length(BSC(:,1));                           % Number of BS (considering 2 interfering tiers)
+N = 19;                                            % Normalizing factor (plot)
 r = (1/sqrt(3))/N;                                 % Cell radius in the plot
 scale = R/r;                                       % Scaling Factor
 
@@ -109,10 +110,10 @@ scale = R/r;                                       % Scaling Factor
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Mobile Stations Deployment
 
-for snap = 1:snap_number
+for snap = 1:snapshots
     
     % Print to video
-    fprintf('Snapshot %d/%d\n',snap,snap_number);
+    fprintf('Snapshot %d/%d\n',snap,snapshots);
     
     if ((snap == 1) || (mod(snap,MS_update) == 0))
         
@@ -120,13 +121,21 @@ for snap = 1:snap_number
         fprintf('MS Deployment\n');
         
         % Area of the rectangle (square km)
-        Arect = (((0.8508-0.1519)*(0.8421-0.1579))*(scale^2))/(1e6);
+        if(K==3)
+            Arect = (((0.7597-0.2887)*(0.7368-0.3158))*(scale^2))/(1e6);
+        elseif(K==7)
+            Arect = (((0.8508-0.1519)*(0.8421-0.1579))*(scale^2))/(1e6);
+        end
         a = r*sqrt(3)/2;                                   % Apothem of the hexagon (plot)
         Aservice = (((((6*r)*a)/2)*N_BS)*(scale^2))/(1e6); % Area of the service area (square km)
         N_MStot = round(N_MSe*(Arect/Aservice));           % Number of MS in the rectangular area
         
         % MS coordinates generation
-        [X_MS,Y_MS] = uniformMS(0.1519,0.8508,0.1579,0.8421,N_MStot);
+        if(K==3)
+            [X_MS,Y_MS] = uniformMS(0.2887,0.7597,0.3158,0.7368,N_MStot);
+        elseif(K==7)
+            [X_MS,Y_MS] = uniformMS(0.1519,0.8508,0.1579,0.8421,N_MStot);
+        end
         
         % Assign nearest BS to each MS and compute distance
         [cellID,shortest_distance] = dsearchn([X_BS,Y_BS],delaunayn([X_BS,Y_BS]),[X_MS,Y_MS]);
@@ -150,7 +159,7 @@ for snap = 1:snap_number
         
         % Add neighbouring cell ID and distances to MS matrix
         MSC = [MSC(:,1:2), neighbouring_index(:,1:4), neighbouring_distance(:,1:4)];
-           
+        
         %plotMS(MSC(:,1),MSC(:,2));                         % Plot MS Deployment
     end
     
@@ -165,7 +174,7 @@ for snap = 1:snap_number
     calling = rand(N_MS,1) <= Pcall;
     N_MScalling = sum(calling);                        % Number of calling MS
     MSC = [MSC(:,1:10), calling, zeros(N_MS,1)];       % Add call state column to MS matrix
-   
+    
     % Assign traffic type based on probabilities defined above
     % 1 = DOWNLINK
     % 2 = UPLINK
@@ -433,8 +442,10 @@ for snap = 1:snap_number
     % Incremental sum of refCell_load for KPI computation
     refCell_load_TOT = refCell_load_TOT + refCell_load;
     
-    % Blocking Rate (%)
-    if K==7
+    % Remove border effect
+    if(K==3)
+        border_cellsID = [23,27,26,30,29,33,32,31,35,34,38,37,41,40,44,43,45,46,48,49,51,52,54,55,57,56,24];
+    elseif(K==7)
         border_cellsID = [51,52,63,58,59,60,65,66,67,72,73,74,75,80,81,82,87,88,89,90,95,96,97,102,103,104,105,110,11,112,117,118,119,114,125,126,121,132,133,128,129,56];
     end
     
@@ -443,6 +454,7 @@ for snap = 1:snap_number
         links(border_links_index,:) = [];
     end
     
+    % Blocking Rate (%)
     N_MSblocked = length(find(links(:,10)==-1));
     N_MSdownlink = length(find(links(:,1)==1));
     N_MSuplink = length(find(links(:,1)==2));
@@ -501,12 +513,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Total KPIs computation & Print to file
 
-network_load_TOT = network_load_TOT / snap_number;
-refCell_load_TOT = refCell_load_TOT / snap_number;
-blocking_rate_TOT = blocking_rate_TOT / snap_number;
-refCell_blocking_rate_TOT = refCell_blocking_rate_TOT / snap_number;
-outage_rate_TOT = outage_rate_TOT / snap_number;
-forced_termination_rate_TOT = forced_termination_rate_TOT / snap_number;
+network_load_TOT = network_load_TOT / snapshots;
+refCell_load_TOT = refCell_load_TOT / snapshots;
+blocking_rate_TOT = blocking_rate_TOT / snapshots;
+refCell_blocking_rate_TOT = refCell_blocking_rate_TOT / snapshots;
+outage_rate_TOT = outage_rate_TOT / snapshots;
+forced_termination_rate_TOT = forced_termination_rate_TOT / snapshots;
 
 fileID = fopen('KPIs.txt','at');
 fprintf(fileID,'%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4t\t%.4f\t%.4f\n',delta,PCmargin_dB,network_load_TOT,refCell_load_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);

@@ -83,10 +83,10 @@ BSC = [X_BS,Y_BS];                                 % BS Coordinates
 N_BS = length(BSC);                                % Number of BS (considering 2 interfering tiers)
 if(strcmp(filenameBS,'BS_K=7.txt'))
     K = 7;                                         % Cluster Size
-    N = 19;                                        % Normalizing factor (plot)
 else
     
 end
+N = 19;                                            % Normalizing factor (plot)
 r = (1/sqrt(3))/N;                                 % Cell radius in the plot
 scale = R/r;                                       % Scaling Factor
 
