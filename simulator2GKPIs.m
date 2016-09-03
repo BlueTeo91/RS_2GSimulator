@@ -12,7 +12,7 @@ tic          % Start stopwatch
 %% Simulator Parameters
 
 % Number of Snapshots
-snapshots = 19;
+snapshots = 199;
 
 % Number of Snapshots between two new MS deployments
 MS_update = 10;
@@ -54,7 +54,7 @@ R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hB
 
 % Network Parameters
 K = 3;                                             % Cluster Size (3 or 7)
-N_MSe = 12700;                                     % Estimated Number of MS in the service area
+N_MSe = 12750;                                     % Estimated Number of MS in the service area
 
 Pcall_average = 1.0;                               % Average call probability
 Pcall_StDev = 0.00;                                % Call probability standard deviation
@@ -65,7 +65,7 @@ p_UL = 0.5;                                        % Probability of Uplink State
 Rb = 271e3;                                        % Bitrate (bit/s)
 
 % Power Control Parameters
-PCmargin_dB = 3;                                   % Power Control Margin (dB)
+PCmargin_dB = 100;                                 % Power Control Margin (dB)
 delta = 1;                                         % Delta [0,1]
 
 % Total number of Radio Resource Units available to the operator
@@ -94,8 +94,10 @@ forced_termination_rate_TOT = 0;
 
 if(K==3)
     filenameBS = 'BS_K=3.txt';                     % File with BS coordinates (K=3)
+    clustersize = '3';
 elseif(K==7)
     filenameBS = 'BS_K=7.txt';                     % File with BS coordinates (K=7)
+    clustersize = '7';
 end
 
 [X_BS,Y_BS] = BSread(filenameBS);                  % Read from file
@@ -520,8 +522,9 @@ refCell_blocking_rate_TOT = refCell_blocking_rate_TOT / snapshots;
 outage_rate_TOT = outage_rate_TOT / snapshots;
 forced_termination_rate_TOT = forced_termination_rate_TOT / snapshots;
 
-fileID = fopen('KPIs.txt','at');
-fprintf(fileID,'%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4t\t%.4f\t%.4f\n',delta,PCmargin_dB,network_load_TOT,refCell_load_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);
+filename = ['KPIs_K=' clustersize '.txt'];
+fileID = fopen(filename,'at');
+fprintf(fileID,'%.4f\t%.4f\t%.4f\t%.4f\n',delta,PCmargin_dB,outage_rate_TOT,forced_termination_rate_TOT);
 fclose('all');
 
 % Print to video
