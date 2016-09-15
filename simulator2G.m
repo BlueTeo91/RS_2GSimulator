@@ -53,7 +53,7 @@ Pcall_average = 1.0;                               % Average call probability
 Pcall_StDev = 0.00;                                % Call probability standard deviation
 
 p_DL = 0.5;                                        % Probability of Downlink State
-p_UL = 0.5;                                        % Probability of Uplink State                                        % Probability of Inactive State
+p_UL = 0.5;                                        % Probability of Uplink State
 
 Rb = 271e3;                                        % Bitrate (bit/s)
 
