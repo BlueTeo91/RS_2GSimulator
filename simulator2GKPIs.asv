@@ -602,6 +602,6 @@ fprintf(fileID,'%.4f\t%.4f\t%.4f\t%.4f\n',delta,PCmargin_dB,outage_rate_TOT,forc
 fclose('all');
 
 % Print to video
-fprintf('PC Parameters: Delta = %.4f\tMargin = %d dB\nNetwork Load: %.4f (Effective)\t%.4f (Theoretical)\nReference Cell Load: %.4f (Effective)\t%.4f (Theoretical)\nRetry Rate: %.4f\nBlocking Rate: %.4f\nReference Cell Blocking Rate: %.4f\nOutage Rate: %.4f\nForced Termination Rate: %.4f\n',delta,PCmargin_dB,network_load_TOT,network_load_th_TOT,refCell_load_TOT,refCell_load_th_TOT,retry_rate_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);
+fprintf('PC Parameters: Delta = %.4f\tMargin = %d dB\nNetwork Load: %.4f (Effective)\t%.4f (Theoretical)\nReference Cell Load: %.4f (Effective)\t%.4f (Theoretical)\nRetry Rate: %.4f\nBlocking Rate: %.4f\nReference Cell Blocking Rate: %.4f\nOutage Rate: %.4f\nForced Termination Rate: %.4f\n',delta,PCmargin_dB,network_load_TOT,network_load_th_TOT,refCell_load_TOT,refCell_load_TOT,retry_rate_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);
 
 toc          % Stop stopwatch
