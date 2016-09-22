@@ -12,7 +12,7 @@ tic          % Start stopwatch
 %% Simulator Parameters
 
 % Number of Snapshots
-snapshots = 1;
+snapshots = 39;
 
 % Number of Snapshots between two new MS deployments
 MS_update = 10;
@@ -67,7 +67,7 @@ Rb = 271e3;                                        % Bitrate (bit/s)
 % Directed Retry
 %   0 -> Disabled
 %   1 -> Enabled
-retry = 0;
+retry = 1;
 
 % Power Control Parameters
 PCmargin_dB = 10;                                  % Power Control Margin (dB)
@@ -588,6 +588,7 @@ end
 
 network_load_th_TOT = network_load_th_TOT / snapshots;
 network_load_TOT = network_load_TOT / snapshots;
+refCell_load_th_TOT = refCell_load_th_TOT / snapshots;
 refCell_load_TOT = refCell_load_TOT / snapshots;
 Avg_retries_TOT = Avg_retries_TOT / snapshots;
 retry_rate_TOT = retry_rate_TOT / snapshots;
