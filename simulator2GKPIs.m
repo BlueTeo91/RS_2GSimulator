@@ -12,7 +12,7 @@ tic          % Start stopwatch
 %% Simulator Parameters
 
 % Number of Snapshots
-snapshots = 39;
+snapshots = 1;
 
 % Number of Snapshots between two new MS deployments
 MS_update = 10;
@@ -65,9 +65,12 @@ p_UL = 0.5;                                        % Probability of Uplink State
 Rb = 271e3;                                        % Bitrate (bit/s)
 
 % Directed Retry
-%   0 -> Disabled
-%   1 -> Enabled
 retry = 1;
+if(retry==1)
+    retryS = 'ON';
+else
+    retryS = 'OFF';
+end
 
 % Power Control Parameters
 PCmargin_dB = 10;                                  % Power Control Margin (dB)
@@ -89,7 +92,6 @@ SIR_FT_Thr = 5;                                           % FT SIR (dB)
 % KPIs initialization
 network_load_th_TOT = 0;
 network_load_TOT = 0;
-refCell_load_th_TOT = 0;
 refCell_load_TOT = 0;
 Avg_retries_TOT = 0;
 retry_rate_TOT = 0;
@@ -421,6 +423,7 @@ for snap = 1:snapshots
     interfering_cellid(:,1) = K+1:K:N_BS;
     
     % SIR DOWNLINK
+    % Create MS_DLrefCell matrix: [connected_MSid, RUid, SIR_dB, SNR_dB]
     MS_DLrefCellindex = find(connected_links(:,3)==1 & connected_links(:,1)==1 & connected_links(:,8)==1);
     MS_DLrefCell = [connected_links(MS_DLrefCellindex,2),connected_links(MS_DLrefCellindex,4),zeros(length(MS_DLrefCellindex),1),zeros(length(MS_DLrefCellindex),1)];
     
@@ -442,6 +445,7 @@ for snap = 1:snapshots
     end
     
     % SIR UPLINK
+    % Create MS_ULrefCell matrix: [connected_MSid, RUid, SIR_dB, SNR_dB]
     MS_ULrefCellindex = find(connected_links(:,3)==1 & connected_links(:,1)==2 & connected_links(:,8)==1);
     MS_ULrefCell = [connected_links(MS_ULrefCellindex,2),connected_links(MS_ULrefCellindex,4),zeros(length(MS_ULrefCellindex),1),zeros(length(MS_ULrefCellindex),1)];
     
@@ -474,18 +478,6 @@ for snap = 1:snapshots
     network_load = ((N_RU_tot - N_RU_available)/N_RU_tot)*100;
     % Incremental sum of network_load for KPI computation
     network_load_TOT = network_load_TOT + network_load;
-    
-    % Reference Cell Load Percentage (Theoretical)
-    if(retry==0)
-        row = find(links(:,2)==1);
-        index_temp = sort(row);
-    else        
-        [row,column] = find(links(:,2:5)==1);
-        index_temp = sort(row);
-    end
-    refCell_load_th = (length(index_temp)/N_RU_cell)*100;    
-    % Incremental sum of refCell_load_th for KPI computation
-    refCell_load_th_TOT = refCell_load_th_TOT + refCell_load_th;
     
     % Reference Cell Load Percentage (BSid=1 - Effective)
     refCell_load = ((N_RU_cell - (BSC(1,3) + BSC(1,4)))/N_RU_cell)*100;
@@ -584,11 +576,29 @@ for snap = 1:snapshots
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Print SIR_dB and SNR_dB in a file
+
+% fileID_SIR_DL = fopen('SIR_DL.txt','at');
+% fprintf(fileID_SIR_DL,'%.4f\n',MS_DLrefCell(:,3));
+% fclose(fileID_SIR_DL);
+% 
+% fileID_SNR_DL = fopen('SNR_DL.txt','at');
+% fprintf(fileID_SNR_DL,'%.4f\n',MS_DLrefCell(:,4));
+% fclose(fileID_SNR_DL);
+% 
+% fileID_SIR_UL = fopen('SIR_UL.txt','at');
+% fprintf(fileID_SIR_UL,'%.4f\n',MS_ULrefCell(:,3));
+% fclose(fileID_SIR_UL);
+% 
+% fileID_SNR_UL = fopen('SNR_UL.txt','at');
+% fprintf(fileID_SNR_UL,'%.4f\n',MS_ULrefCell(:,4));
+% fclose(fileID_SNR_UL);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Total KPIs computation & Print to file
 
 network_load_th_TOT = network_load_th_TOT / snapshots;
 network_load_TOT = network_load_TOT / snapshots;
-refCell_load_th_TOT = refCell_load_th_TOT / snapshots;
 refCell_load_TOT = refCell_load_TOT / snapshots;
 Avg_retries_TOT = Avg_retries_TOT / snapshots;
 retry_rate_TOT = retry_rate_TOT / snapshots;
@@ -603,6 +613,6 @@ fprintf(fileID,'%.4f\t%.4f\t%.4f\t%.4f\n',delta,PCmargin_dB,outage_rate_TOT,forc
 fclose('all');
 
 % Print to video
-fprintf('PC Parameters: Delta = %.4f\tMargin = %d dB\nNetwork Load: %.4f (Effective)\t%.4f (Theoretical)\nReference Cell Load: %.4f (Effective)\t%.4f (Theoretical)\nRetry Rate: %.4f\nBlocking Rate: %.4f\nReference Cell Blocking Rate: %.4f\nOutage Rate: %.4f\nForced Termination Rate: %.4f\n',delta,PCmargin_dB,network_load_TOT,network_load_th_TOT,refCell_load_TOT,refCell_load_th_TOT,retry_rate_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);
+fprintf('Directed Retry: %s\nPC Parameters: Delta = %.4f\tMargin = %d dB\nNetwork Load: %.4f (Effective)\t%.4f (Theoretical)\nReference Cell Load: %.4f (Effective)\nRetry Rate: %.4f\nBlocking Rate: %.4f\nReference Cell Blocking Rate: %.4f\nOutage Rate: %.4f\nForced Termination Rate: %.4f\n',retryS,delta,PCmargin_dB,network_load_TOT,network_load_th_TOT,refCell_load_TOT,retry_rate_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);
 
 toc          % Stop stopwatch
