@@ -12,7 +12,7 @@ tic          % Start stopwatch
 %% Simulator Parameters
 
 % Number of Snapshots
-snapshots = 99;
+snapshots = 1;
 
 % Number of Snapshots between two new MS deployments
 MS_update = 10;
@@ -64,8 +64,13 @@ p_UL = 0.5;                                        % Probability of Uplink State
 
 Rb = 271e3;                                        % Bitrate (bit/s)
 
+% Directed Retry
+%   0 -> Disabled
+%   1 -> Enabled
+retry = 0;
+
 % Power Control Parameters
-PCmargin_dB = 100;                                 % Power Control Margin (dB)
+PCmargin_dB = 10;                                  % Power Control Margin (dB)
 delta = 1;                                         % Delta [0,1]
 
 % Total number of Radio Resource Units available to the operator
@@ -83,7 +88,10 @@ SIR_FT_Thr = 5;                                           % FT SIR (dB)
 
 % KPIs initialization
 network_load_TOT = 0;
+network_load_th_TOT = 0;
 refCell_load_TOT = 0;
+Avg_retries_TOT = 0;
+retry_rate_TOT = 0;
 blocking_rate_TOT = 0;
 refCell_blocking_rate_TOT = 0;
 outage_rate_TOT = 0;
@@ -146,7 +154,7 @@ for snap = 1:snapshots
         MSCtemp = [X_MS, Y_MS, cellID, shortest_distance*scale];
         MSindex = find(MSCtemp(:,4) < R);                  % Index of MSCtemp with distance less than cell radius
         MSC = MSCtemp(MSindex,1:2);                        % Save in MSC only the MS inside the service area
-        N_MS = length(MSC(:,1));                                % Real Number of MS in the service area
+        N_MS = length(MSC(:,1));                           % Real Number of MS in the service area
         
         % Compute distance between each MS and each BS
         distance = zeros(N_MS,N_BS);
@@ -251,52 +259,74 @@ for snap = 1:snapshots
     for i = 1:N_MS
         switch links(i,1)
             case 1      % Downlink
-                if((links(i,6)>Prmin_MS_dBm) && ((BSC(links(i,2),3)) > 0))
-                    BSC(links(i,2),3) = BSC(links(i,2),3) - 1;
-                    links(i,10) = links(i,2);
-                    links(i,11) = N_RU_cellDL - BSC(links(i,2),3);
-                    links(i,12) = 1;
-                elseif((links(i,7)>Prmin_MS_dBm) && ((BSC(links(i,3),3)) > 0))
-                    BSC(links(i,3),3) = BSC(links(i,3),3) - 1;
-                    links(i,10) = links(i,3);
-                    links(i,11) = N_RU_cellDL - BSC(links(i,3),3);
-                    links(i,12) = 2;
-                elseif((links(i,8)>Prmin_MS_dBm) && ((BSC(links(i,4),3)) > 0))
-                    BSC(links(i,4),3) = BSC(links(i,4),3) - 1;
-                    links(i,10) = links(i,4);
-                    links(i,11) = N_RU_cellDL - BSC(links(i,4),3);
-                    links(i,12) = 3;
-                elseif((links(i,9)>Prmin_MS_dBm) && ((BSC(links(i,5),3)) > 0))
-                    BSC(links(i,5),3) = BSC(links(i,5),3) - 1;
-                    links(i,10) = links(i,5);
-                    links(i,11) = N_RU_cellDL - BSC(links(i,5),3);
-                    links(i,12) = 4;
+                if(retry==0)
+                    if((links(i,6)>Prmin_MS_dBm) && ((BSC(links(i,2),3)) > 0))
+                        BSC(links(i,2),3) = BSC(links(i,2),3) - 1;
+                        links(i,10) = links(i,2);
+                        links(i,11) = N_RU_cellDL - BSC(links(i,2),3);
+                        links(i,12) = 1;
+                    else
+                        links(i,10) = -1;   % Blocked MS (No RU assigned)
+                    end
                 else
-                    links(i,10) = -1;    % Blocked MS (No RU assigned)
+                    if((links(i,6)>Prmin_MS_dBm) && ((BSC(links(i,2),3)) > 0))
+                        BSC(links(i,2),3) = BSC(links(i,2),3) - 1;
+                        links(i,10) = links(i,2);
+                        links(i,11) = N_RU_cellDL - BSC(links(i,2),3);
+                        links(i,12) = 1;
+                    elseif((links(i,7)>Prmin_MS_dBm) && ((BSC(links(i,3),3)) > 0))
+                        BSC(links(i,3),3) = BSC(links(i,3),3) - 1;
+                        links(i,10) = links(i,3);
+                        links(i,11) = N_RU_cellDL - BSC(links(i,3),3);
+                        links(i,12) = 2;
+                    elseif((links(i,8)>Prmin_MS_dBm) && ((BSC(links(i,4),3)) > 0))
+                        BSC(links(i,4),3) = BSC(links(i,4),3) - 1;
+                        links(i,10) = links(i,4);
+                        links(i,11) = N_RU_cellDL - BSC(links(i,4),3);
+                        links(i,12) = 3;
+                    elseif((links(i,9)>Prmin_MS_dBm) && ((BSC(links(i,5),3)) > 0))
+                        BSC(links(i,5),3) = BSC(links(i,5),3) - 1;
+                        links(i,10) = links(i,5);
+                        links(i,11) = N_RU_cellDL - BSC(links(i,5),3);
+                        links(i,12) = 4;
+                    else
+                        links(i,10) = -1;    % Blocked MS (No RU assigned)
+                    end
                 end
             case 2      % Uplink
-                if((links(i,6)>Prmin_BS_dBm) && ((BSC(links(i,2),4)) > 0))
-                    BSC(links(i,2),4) = BSC(links(i,2),4) - 1;
-                    links(i,10) = links(i,2);
-                    links(i,11) = N_RU_cellUL - BSC(links(i,2),4);
-                    links(i,12) = 1;
-                elseif((links(i,7)>Prmin_BS_dBm) && ((BSC(links(i,3),4)) > 0))
-                    BSC(links(i,3),4) = BSC(links(i,3),4) - 1;
-                    links(i,10) = links(i,3);
-                    links(i,11) = N_RU_cellUL - BSC(links(i,3),4);
-                    links(i,12) = 2;
-                elseif((links(i,8)>Prmin_BS_dBm) && ((BSC(links(i,4),4)) > 0))
-                    BSC(links(i,4),4) = BSC(links(i,4),4) - 1;
-                    links(i,10) = links(i,4);
-                    links(i,11) = N_RU_cellUL - BSC(links(i,4),4);
-                    links(i,12) = 3;
-                elseif((links(i,9)>Prmin_BS_dBm) && ((BSC(links(i,5),4)) > 0))
-                    BSC(links(i,5),4) = BSC(links(i,5),4) - 1;
-                    links(i,10) = links(i,5);
-                    links(i,11) = N_RU_cellUL - BSC(links(i,5),4);
-                    links(i,12) = 4;
+                if(retry==0)
+                    if((links(i,6)>Prmin_BS_dBm) && ((BSC(links(i,2),4)) > 0))
+                        BSC(links(i,2),4) = BSC(links(i,2),4) - 1;
+                        links(i,10) = links(i,2);
+                        links(i,11) = N_RU_cellUL - BSC(links(i,2),4);
+                        links(i,12) = 1;
+                    else
+                        links(i,10) = -1;   % Blocked MS (No RU assigned)
+                    end
                 else
-                    links(i,10) = -1;    % Blocked MS (No RU assigned)
+                    if((links(i,6)>Prmin_BS_dBm) && ((BSC(links(i,2),4)) > 0))
+                        BSC(links(i,2),4) = BSC(links(i,2),4) - 1;
+                        links(i,10) = links(i,2);
+                        links(i,11) = N_RU_cellUL - BSC(links(i,2),4);
+                        links(i,12) = 1;
+                    elseif((links(i,7)>Prmin_BS_dBm) && ((BSC(links(i,3),4)) > 0))
+                        BSC(links(i,3),4) = BSC(links(i,3),4) - 1;
+                        links(i,10) = links(i,3);
+                        links(i,11) = N_RU_cellUL - BSC(links(i,3),4);
+                        links(i,12) = 2;
+                    elseif((links(i,8)>Prmin_BS_dBm) && ((BSC(links(i,4),4)) > 0))
+                        BSC(links(i,4),4) = BSC(links(i,4),4) - 1;
+                        links(i,10) = links(i,4);
+                        links(i,11) = N_RU_cellUL - BSC(links(i,4),4);
+                        links(i,12) = 3;
+                    elseif((links(i,9)>Prmin_BS_dBm) && ((BSC(links(i,5),4)) > 0))
+                        BSC(links(i,5),4) = BSC(links(i,5),4) - 1;
+                        links(i,10) = links(i,5);
+                        links(i,11) = N_RU_cellUL - BSC(links(i,5),4);
+                        links(i,12) = 4;
+                    else
+                        links(i,10) = -1;    % Blocked MS (No RU assigned)
+                    end
                 end
             otherwise   % Inactive (Not Calling)
                 links(i,10) = 0;         % RU not requested
@@ -377,14 +407,14 @@ for snap = 1:snapshots
     % Add SNR (dB) column in connected_links matrix
     connected_links = [connected_links(:,1:6), SNR_dB];
     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% SIR Computation
+    
     % Add state column
     % Active = 1
     % Silent = 0
     state = rand(length(connected_links(:,1)),1) <= 0.45;
     connected_links = [connected_links(:,1:7), state];
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %% SIR Computation
     
     % Search cell ID of two interfering tiers
     interfering_cellid(:,1) = K+1:K:N_BS;
@@ -434,6 +464,11 @@ for snap = 1:snapshots
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% KPIs Computation
     
+    % Network Load Percentage (Theoretical)
+    network_load_th = (N_MS/N_RU_tot)*100;
+    % Incremental sum of network_load for KPI computation
+    network_load_th_TOT = network_load_th_TOT + network_load_th;
+    
     % Network Load Percentage (based on assigned RUs)
     network_load = ((N_RU_tot - N_RU_available)/N_RU_tot)*100;
     % Incremental sum of network_load for KPI computation
@@ -456,6 +491,24 @@ for snap = 1:snapshots
         links(border_links_index,:) = [];
     end
     
+    % Remove not requested links
+    inactive_links_index = find(links(:,10)==0);
+    links(inactive_links_index,:) = [];
+    
+    % Average number of retries per user
+    retries = links(:,12) - 1;
+    if(retry==0)
+        retries(retries==-1)=0;
+    else
+        retries(retries==-1)=3; 
+    end
+    Avg_retries = sum(retries)/length(retries);
+    Avg_retries_TOT = Avg_retries_TOT + Avg_retries;
+    
+    % Retry rate
+    retry_rate = (length(find(retries>0))/length(retries))*100;
+    retry_rate_TOT = retry_rate_TOT + retry_rate;
+    
     % Blocking Rate (%)
     N_MSblocked = length(find(links(:,10)==-1));
     N_MSdownlink = length(find(links(:,1)==1));
@@ -470,7 +523,7 @@ for snap = 1:snapshots
     RU_temp = links(index_temp,10);
     blocked_index_refCell = find(RU_temp(:,1)==-1);
     N_MSblocked_refCell = length(blocked_index_refCell);
-    refCell_blocking_rate = (N_MSblocked_refCell / (N_MSblocked_refCell + (N_RU_cell - BSC(1,3) + BSC(1,4))))*100;
+    refCell_blocking_rate = (N_MSblocked_refCell / (N_MSblocked_refCell + (N_RU_cell - (BSC(1,3) + BSC(1,4)))))*100;
     % Incremental sum of refCell_blocking_rate for KPI computation
     refCell_blocking_rate_TOT = refCell_blocking_rate_TOT + refCell_blocking_rate;
     
@@ -515,8 +568,11 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Total KPIs computation & Print to file
 
+network_load_th_TOT = network_load_th_TOT / snapshots;
 network_load_TOT = network_load_TOT / snapshots;
 refCell_load_TOT = refCell_load_TOT / snapshots;
+Avg_retries_TOT = Avg_retries_TOT / snapshots;
+retry_rate_TOT = retry_rate_TOT / snapshots;
 blocking_rate_TOT = blocking_rate_TOT / snapshots;
 refCell_blocking_rate_TOT = refCell_blocking_rate_TOT / snapshots;
 outage_rate_TOT = outage_rate_TOT / snapshots;
@@ -528,6 +584,6 @@ fprintf(fileID,'%.4f\t%.4f\t%.4f\t%.4f\n',delta,PCmargin_dB,outage_rate_TOT,forc
 fclose('all');
 
 % Print to video
-fprintf('PC Parameters: Delta = %.4f\tMargin = %d dB\nNetwork Load: %.4f\nReference Cell Load: %.4f\nBlocking Rate: %.4f\nReference Cell Blocking Rate: %.4f\nOutage Rate: %.4f\nForced Termination Rate: %.4f\n',delta,PCmargin_dB,network_load_TOT,refCell_load_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);
+fprintf('PC Parameters: Delta = %.4f\tMargin = %d dB\nNetwork Load: %.4f (Effective)\t%.4f (Theoretical)\nReference Cell Load: %.4f (Effective)\nRetry Rate: %.4f\nBlocking Rate: %.4f\nReference Cell Blocking Rate: %.4f\nOutage Rate: %.4f\nForced Termination Rate: %.4f\n',delta,PCmargin_dB,network_load_TOT,network_load_th_TOT,refCell_load_TOT,retry_rate_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);
 
 toc          % Stop stopwatch
