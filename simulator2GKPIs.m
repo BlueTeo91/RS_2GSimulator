@@ -53,7 +53,7 @@ Lmax = min(Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB),Ptmax_BS_dBm - (Prmin_MS_dBm + 
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
-K = 7;                                             % Cluster Size (3 or 7)
+K = 3;                                             % Cluster Size (3 or 7)
 N_MSe = 12750;                                     % Estimated Number of MS in the service area
 
 Pcall_average = 1.0;                               % Average call probability
@@ -73,8 +73,8 @@ else
 end
 
 % Power Control Parameters
-PCmargin_dB = 10;                                  % Power Control Margin (dB)
-delta = 1;                                         % Delta [0,1]
+PCmargin_dB = 3;                                  % Power Control Margin (dB)
+delta = 1.0;                                       % Delta [0,1]
 
 % Total number of Radio Resource Units available to the operator
 N_RU = 700;
@@ -428,20 +428,25 @@ for snap = 1:snapshots
     MS_DLrefCell = [connected_links(MS_DLrefCellindex,2),connected_links(MS_DLrefCellindex,4),zeros(length(MS_DLrefCellindex),1),zeros(length(MS_DLrefCellindex),1)];
     
     for i = 1:length(MS_DLrefCellindex)
-        I = 0;
+        I_DL = 0;
+        interferinglinks_index = zeros(length(interfering_cellid),1);
         for j = 1:length(interfering_cellid)
-            interferinglinks_index = find(connected_links(:,3)==interfering_cellid(j,1) & connected_links(:,1)==1 & connected_links(:,4)==MS_DLrefCell(i,2) & connected_links(:,8)==1);
+            temp_index = find(connected_links(:,3)==interfering_cellid(j,1) & connected_links(:,1)==1 & connected_links(:,4)==MS_DLrefCell(i,2) & connected_links(:,8)==1);
+            if(temp_index)
+                interferinglinks_index(j,1) = temp_index;
+            end
         end
+        interferinglinks_index(interferinglinks_index==0) = [];
         for k = 1:length(interferinglinks_index)
-            interferingDL_distance = computeDistance(MSC(MS_DLrefCell(i,1),1:2),BSC(connected_links(interferinglinks_index(k,1)),1:2));
-            I_dBm = propagation(connected_links(interferinglinks_index(k,1),5),fc,hBS,sigmadB,interferingDL_distance*scale);
-            I = I + 10^((I_dBm-30)/10);
+            interferingDL_distance = computeDistance(MSC(MS_DLrefCell(i,1),1:2),BSC(connected_links(interferinglinks_index(k,1),3),1:2));
+            I_DL_dBm = propagation(connected_links(interferinglinks_index(k,1),5),fc,hBS,sigmadB,interferingDL_distance*scale);
+            I_DL = I_DL + 10^(I_DL_dBm/10);  % Incremental sum of interference (mW)
         end
-        I_dBm = 10*log10(I);
-        C_dBm = connected_links(MS_DLrefCellindex(i,1),6);
-        SIR_dB = C_dBm - I_dBm;
-        MS_DLrefCell(i,3) = SIR_dB;
-        MS_DLrefCell(i,4) = connected_links(MS_DLrefCellindex(i,1),7);
+        I_DL_dBm = 10*log10(I_DL);
+        C_DL_dBm = connected_links(MS_DLrefCellindex(i,1),6);
+        SIR_DL_dB = C_DL_dBm - I_DL_dBm;
+        MS_DLrefCell(i,3) = SIR_DL_dB;
+        MS_DLrefCell(i,4) = connected_links(MS_DLrefCellindex(i,1),7);  % Add SNR to MS_DLrefCell
     end
     
     % SIR UPLINK
@@ -450,20 +455,25 @@ for snap = 1:snapshots
     MS_ULrefCell = [connected_links(MS_ULrefCellindex,2),connected_links(MS_ULrefCellindex,4),zeros(length(MS_ULrefCellindex),1),zeros(length(MS_ULrefCellindex),1)];
     
     for i = 1:length(MS_ULrefCellindex)
-        I = 0;
+        I_UL = 0;
+        interferinglinks_index = zeros(length(interfering_cellid),1);
         for j = 1:length(interfering_cellid)
-            interferinglinks_index = find(connected_links(:,3)==interfering_cellid(j,1) & connected_links(:,1)==2 & connected_links(:,4)==MS_ULrefCell(i,2) & connected_links(:,8)==1);
+            temp_index = find(connected_links(:,3)==interfering_cellid(j,1) & connected_links(:,1)==2 & connected_links(:,4)==MS_ULrefCell(i,2) & connected_links(:,8)==1);
+            if(temp_index)
+                interferinglinks_index(j,1) = temp_index;
+            end
         end
+        interferinglinks_index(interferinglinks_index==0) = [];
         for k = 1:length(interferinglinks_index)
             interferingUL_distance = computeDistance(BSC(1,1:2),MSC(connected_links(interferinglinks_index(k,1),2),1:2));
-            I_dBm = propagation(connected_links(interferinglinks_index(k,1),5),fc,hBS,sigmadB,interferingUL_distance*scale);
-            I = I + 10^((I_dBm-30)/10);
+            I_UL_dBm = propagation(connected_links(interferinglinks_index(k,1),5),fc,hBS,sigmadB,interferingUL_distance*scale);
+            I_UL = I_UL + 10^((I_UL_dBm)/10);  % Incremental sum of interference (mW)
         end
-        I_dBm = 10*log10(I);
-        C_dBm = connected_links(MS_ULrefCellindex(i,1),6);
-        SIR_dB = C_dBm - I_dBm;
-        MS_ULrefCell(i,3) = SIR_dB;
-        MS_ULrefCell(i,4) = connected_links(MS_ULrefCellindex(i,1),7);
+        I_UL_dBm = 10*log10(I_UL);
+        C_UL_dBm = connected_links(MS_ULrefCellindex(i,1),6);
+        SIR_UL_dB = C_UL_dBm - I_UL_dBm;
+        MS_ULrefCell(i,3) = SIR_UL_dB;
+        MS_ULrefCell(i,4) = connected_links(MS_ULrefCellindex(i,1),7);  % Add SNR to MS_ULrefCell
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -572,8 +582,6 @@ for snap = 1:snapshots
     forced_termination_rate = ((N_MS_FT_DL+N_MS_FT_UL)/(length(MS_DLrefCell(:,1))+length(MS_ULrefCell(:,1))))*100;
     % Incremental sum of outage_rate for KPI computation
     forced_termination_rate_TOT = forced_termination_rate_TOT + forced_termination_rate;
-    
-end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Print SIR_dB and SNR_dB in a file
@@ -594,6 +602,7 @@ end
 % fprintf(fileID_SNR_UL,'%.4f\n',MS_ULrefCell(:,4));
 % fclose(fileID_SNR_UL);
 
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Total KPIs computation & Print to file
 
@@ -607,12 +616,13 @@ refCell_blocking_rate_TOT = refCell_blocking_rate_TOT / snapshots;
 outage_rate_TOT = outage_rate_TOT / snapshots;
 forced_termination_rate_TOT = forced_termination_rate_TOT / snapshots;
 
-filename = ['KPIs_K=' clustersize '.txt'];
-fileID = fopen(filename,'at');
-fprintf(fileID,'%.4f\t%.4f\t%.4f\t%.4f\n',delta,PCmargin_dB,outage_rate_TOT,forced_termination_rate_TOT);
-fclose('all');
+% Print KPIs to file
+% filename = ['KPIs_K=' clustersize '.txt'];
+% fileID = fopen(filename,'at');
+% fprintf(fileID,'%.4f\t%.4f\t%.4f\t%.4f\n',delta,PCmargin_dB,outage_rate_TOT,forced_termination_rate_TOT);
+% fclose('all');
 
 % Print to video
-fprintf('Directed Retry: %s\nPC Parameters: Delta = %.4f\tMargin = %d dB\nNetwork Load: %.4f (Effective)\t%.4f (Theoretical)\nReference Cell Load: %.4f (Effective)\nRetry Rate: %.4f\nBlocking Rate: %.4f\nReference Cell Blocking Rate: %.4f\nOutage Rate: %.4f\nForced Termination Rate: %.4f\n',retryS,delta,PCmargin_dB,network_load_TOT,network_load_th_TOT,refCell_load_TOT,retry_rate_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);
+fprintf('\nCluster Size = %s\nDirected Retry: %s\nPC Parameters: Delta = %.4f\tMargin = %d dB\nNetwork Load: %.4f (Effective)\t%.4f (Theoretical)\nReference Cell Load: %.4f (Effective)\nRetry Rate: %.4f\nBlocking Rate: %.4f\nReference Cell Blocking Rate: %.4f\nOutage Rate: %.4f\nForced Termination Rate: %.4f\n\n',clustersize,retryS,delta,PCmargin_dB,network_load_TOT,network_load_th_TOT,refCell_load_TOT,retry_rate_TOT,blocking_rate_TOT,refCell_blocking_rate_TOT,outage_rate_TOT,forced_termination_rate_TOT);
 
 toc          % Stop stopwatch
