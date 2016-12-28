@@ -53,7 +53,7 @@ Lmax = min(Ptmax_MS_dBm - (Prmin_BS_dBm + Mf_dB),Ptmax_BS_dBm - (Prmin_MS_dBm + 
 R = round((10^((Lmax-69.55-26.16*log10(fc)+13.82*log10(hBS))/(44.9-6.55*log10(hBS))))*1000);
 
 % Network Parameters
-K = 3;                                             % Cluster Size (3 or 7)
+K = 7;                                             % Cluster Size (3 or 7)
 N_MSe = 12750;                                     % Estimated Number of MS in the service area
 
 Pcall_average = 1.0;                               % Average call probability
@@ -73,8 +73,8 @@ else
 end
 
 % Power Control Parameters
-PCmargin_dB = 3;                                  % Power Control Margin (dB)
-delta = 1.0;                                       % Delta [0,1]
+PCmargin_dB = 35;                                  % Power Control Margin (dB)
+delta = 0.9;                                       % Delta [0,1]
 
 % Total number of Radio Resource Units available to the operator
 N_RU = 700;
