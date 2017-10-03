@@ -21,4 +21,4 @@ Hi everybody! Remember a few simple rules for using the repository:
 2 ) if you do not know how to use GitHub read the Wiki, or ask XD
 
 
-![DOH](http://www.myitalianchef.com/wp-content/uploads/2015/07/homer-simpson.jpg)
+![DOH](https://github.com/BlueTeo91/RS_2GSimulator/blob/master/homer.jpeg)
